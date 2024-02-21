@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 from enum import IntEnum
 
@@ -85,7 +85,9 @@ class HexGame(object):
         #     self.done = True
         #     self.winner = (self.active_player + 1) % 2
         #     return (self.active_player + 1) % 2
-
+        if not self.is_valid_move(action):
+            return 2
+        
         y, x = self.action_to_coordinate(action)
         self.board[y, x] = self.active_player
         self.empty_fields -= 1
@@ -118,7 +120,6 @@ class HexGame(object):
 
     def flood_fill(self, position):
         regions = self.regions[self.active_player]
-
         y, x = (position[0] + 1, position[1] + 1)
         neighborhood = regions[(y - 1):(y + 2), (x - 1):(x + 2)].copy()
         neighborhood[0, 0] = 0
@@ -164,7 +165,9 @@ class HexEnv(gym.Env):
         self.winner = None
         self.previous_opponent_move = None
         self.debug = debug
-
+        self.board_size = board_size
+        self.observation_space = spaces.Box(low=0, high=2, shape=(board_size, board_size), dtype=np.uint8)
+        self.action_space = spaces.Discrete(board_size**2)
         # cache initial connection matrix (approx +100 games/s)
         self.initial_regions = regions
 
@@ -172,7 +175,7 @@ class HexEnv(gym.Env):
     def opponent(self):
         return player((self.player + 1) % 2)
 
-    def reset(self):
+    def reset(self, seed=None):
         if self.initial_regions is None:
             self.simulator = HexGame(self.active_player,
                                      self.initial_board.copy(),
@@ -203,12 +206,17 @@ class HexEnv(gym.Env):
             'last_move_opponent': self.previous_opponent_move,
             'last_move_player': None
         }
-
-        return (self.simulator.board, self.active_player), info
+        # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
+        # state = np.stack([self.simulator.board, active_player_array], axis=0)
+        # print(state)
+        # print(self.observation_space)
+        return self.simulator.board, info
 
     def step(self, action):
         if not self.simulator.done:
             self.winner = self.simulator.make_move(action)
+            if self.winner == 3: # invalid move
+                self.simulator.done = True
 
         opponent_action = None
 
@@ -224,6 +232,8 @@ class HexEnv(gym.Env):
             reward = 1
         elif self.winner == self.opponent:
             reward = -1
+        elif self.winner == 3: # invalid move
+            reward = -100
         else:
             reward = 0
 
@@ -233,8 +243,11 @@ class HexEnv(gym.Env):
             'last_move_player': action
         }
 
-        return ((self.simulator.board, self.active_player), reward,
-                self.simulator.done, info)
+        # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
+        # state = np.stack([self.simulator.board, active_player_array], axis=0)
+
+        return (self.simulator.board, reward,
+                self.simulator.done, False, info)
 
     def render(self, mode='ansi', close=False):
         board = self.simulator.board

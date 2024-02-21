@@ -1,5 +1,5 @@
 from minihex.HexGame import player
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 from minihex.HexGame import HexGame
 import numpy as np
 import random
