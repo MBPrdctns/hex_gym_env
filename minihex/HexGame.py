@@ -88,7 +88,7 @@ class HexGame(object):
         #     self.winner = (self.active_player + 1) % 2
         #     return (self.active_player + 1) % 2
         if not self.is_valid_move(action):
-            return 2
+            return 3
         
         y, x = self.action_to_coordinate(action)
         self.board[y, x] = self.active_player
@@ -188,7 +188,10 @@ class HexEnv(gym.Env):
     def opponent(self):
         return player((self.player + 1) % 2)
 
-    def reset(self, seed=None):
+    def get_action_mask(self):
+        return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
+
+    def reset(self, seed=None, options=None):
         if self.initial_regions is None:
             self.simulator = HexGame(self.active_player,
                                      self.initial_board.copy(),
@@ -259,13 +262,15 @@ class HexEnv(gym.Env):
         info = {
             'state': self.simulator.board,
             'last_move_opponent': opponent_action,
-            'last_move_player': action
+            'last_move_player': action,
+            'winner': self.winner
         }
 
         return ((self.simulator.board, self.active_player), reward,
                 self.simulator.done, info)
 
     def render(self, mode='ansi', close=False):
+        
         board = self.simulator.board
         print(" " * 6, end="")
         for j in range(board.shape[1]):
