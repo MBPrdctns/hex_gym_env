@@ -3,6 +3,8 @@ from gym import spaces
 import numpy as np
 from enum import IntEnum
 
+from minihex.interactive.interactive import InteractiveGame
+from configparser import ConfigParser
 
 class player(IntEnum):
     BLACK = 0
@@ -125,7 +127,7 @@ class HexGame(object):
         neighborhood[2, 2] = 0
         adjacent_regions = sorted(set(neighborhood.flatten().tolist()))
 
-        # region label = 0 is always present, but not a region
+        # the region label = 0 is always present, but not a region
         adjacent_regions.pop(0)
 
         if len(adjacent_regions) == 0:
@@ -151,9 +153,14 @@ class HexEnv(gym.Env):
                  board=None,
                  regions=None,
                  board_size=5,
-                 debug=False):
-        self.opponent_policy = opponent_policy
-
+                 debug=False,
+                 show_board=False):
+        
+        if opponent_policy == "interactive":
+            self.opponent_policy = self.interactive_play
+        else:
+            self.opponent_policy = opponent_policy
+        
         if board is None:
             board = player.EMPTY * np.ones((board_size, board_size))
 
@@ -164,9 +171,14 @@ class HexEnv(gym.Env):
         self.winner = None
         self.previous_opponent_move = None
         self.debug = debug
-
+        self.show_board = show_board
         # cache initial connection matrix (approx +100 games/s)
         self.initial_regions = regions
+
+        if self.show_board:
+            config = ConfigParser()
+            config.read('config.ini')
+            self.interactive = InteractiveGame(config, board)
 
     @property
     def opponent(self):
@@ -209,7 +221,10 @@ class HexEnv(gym.Env):
     def step(self, action):
         if not self.simulator.done:
             self.winner = self.simulator.make_move(action)
-
+        
+        if self.show_board:
+            self.interactive.gui.update_board(self.simulator.board)
+        
         opponent_action = None
 
         if not self.simulator.done:
@@ -219,6 +234,9 @@ class HexEnv(gym.Env):
                 'last_move_player': self.previous_opponent_move
             }
             opponent_action = self.opponent_move(info_opponent)
+
+        if self.show_board:
+            self.interactive.gui.update_board(self.simulator.board)
 
         if self.winner == self.player:
             reward = 1
@@ -232,7 +250,7 @@ class HexEnv(gym.Env):
             'last_move_opponent': opponent_action,
             'last_move_player': action
         }
-
+        # breakpoint()
         return ((self.simulator.board, self.active_player), reward,
                 self.simulator.done, info)
 
@@ -269,3 +287,12 @@ class HexEnv(gym.Env):
         self.winner = self.simulator.make_move(opponent_action)
         self.previous_opponent_move = opponent_action
         return opponent_action
+
+    def interactive_play(self, board, player,info):
+        self.interactive.board = board
+        self.interactive.gui.update_board(board)
+        action = self.interactive.play_move()
+        print(action)
+        action = self.simulator.coordinate_to_action(action)
+        # self.winner = self.simulator.fast_move(action)
+        return action
