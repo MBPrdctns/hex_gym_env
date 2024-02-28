@@ -4,7 +4,7 @@ import numpy as np
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.ppo_mask import MaskablePPO
-from minihex.interactive.interactive import InteractiveGame
+from minihex.interactive import InteractiveGame
 from configparser import ConfigParser
 
 
