@@ -38,7 +38,7 @@ def _get_colors(dark_mode: bool):
 class Gui:
     def __init__(self, board, radius, dark_mode=False):
         self.r = radius
-        self.size = [int(self.r * (3 / 2 * board.shape[0] + 3)) + 200, int(self.r * (3 ** (1 / 2) / 2 * board.shape[0] + 3))]
+        self.size = [int(self.r * (3 / 2 * board.shape[0] + 3)) + 200, int(self.r * (3 ** (1 / 2) / 2 * board.shape[0] + 3)) + 100]
         self.editor_mode = False  # AI will not move in editor mode
         self.colors = _get_colors(dark_mode)
         self.show_field_text = False
