@@ -90,7 +90,7 @@ class InteractiveGame:
             move = tuple(map(sum, zip(move, (-1,-1))))
             print((move in valid_actions))
             if move in valid_actions:
-                return move # move
+                return move
 
 
 def play_game(interactive):
