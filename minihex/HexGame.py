@@ -172,6 +172,7 @@ class HexEnv(gym.Env):
         self.winner = None
         self.previous_opponent_move = None
         self.debug = debug
+        self.show_board = show_board        
         self.board_size = board_size
         self.observation_space = spaces.Box(low=0, high=2, shape=(board_size, board_size), dtype=np.uint8)
         self.action_space = spaces.Discrete(board_size**2)
@@ -187,10 +188,6 @@ class HexEnv(gym.Env):
     def opponent(self):
         return player((self.player + 1) % 2)
 
-    def get_action_mask(self):
-        return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
-
-    def reset(self, seed=None, options=None):
     def get_action_mask(self):
         return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
 
@@ -230,21 +227,13 @@ class HexEnv(gym.Env):
         # print(state)
         # print(self.observation_space)
         return self.simulator.board, info
-        # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
-        # state = np.stack([self.simulator.board, active_player_array], axis=0)
-        # print(state)
-        # print(self.observation_space)
-        return self.simulator.board, info
 
     def step(self, action):
         if not self.simulator.done:
             self.winner = self.simulator.make_move(action)
-                    if self.winner == 3: # invalid move
+            if self.winner == 3: # invalid move
                 self.simulator.done = True
 
-        if self.show_board:
-            self.interactive.gui.update_board(self.simulator.board)
-        
         opponent_action = None
 
         if not self.simulator.done:
@@ -255,15 +244,10 @@ class HexEnv(gym.Env):
             }
             opponent_action = self.opponent_move(info_opponent)
 
-        if self.show_board:
-            self.interactive.gui.update_board(self.simulator.board)
-
         if self.winner == self.player:
             reward = 1
         elif self.winner == self.opponent:
             reward = -1
-        elif self.winner == 3: # invalid move
-            reward = -100
         elif self.winner == 3: # invalid move
             reward = -100
         else:
