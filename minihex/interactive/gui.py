@@ -93,7 +93,7 @@ class Gui:
         board[:, -1] = player.WHITE
         board[-1, :] = player.BLACK
         
-        print("update")
+        # print("update")
         # Clear the screen and set the screen background
         self.screen.fill(self.colors['BACKGROUND'])
 
@@ -162,8 +162,8 @@ class Gui:
                     self.quit()
                     exit(0)
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    print("click")
-                    print(self.pixel_to_pos(event.pos))
+                    # print("click")
+                    # print(self.pixel_to_pos(event.pos))
                     return self.pixel_to_pos(event.pos)
                 if event.type == pygame.KEYDOWN and event.unicode == 'd':
                     self.toggle_colors()

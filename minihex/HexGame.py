@@ -6,6 +6,13 @@ from enum import IntEnum
 from minihex.interactive.interactive import InteractiveGame
 from configparser import ConfigParser
 
+import torch
+from minihex.creation.noise import singh_maddala_onto_output, uniform_noise_onto_output
+from minihex.utils import utils
+import torch.nn as nn
+from torch.distributions.categorical import Categorical
+from minihex.utils.utils import load_model
+
 class player(IntEnum):
     BLACK = 0
     WHITE = 1
@@ -156,14 +163,28 @@ class HexEnv(gym.Env):
                  debug=False,
                  show_board=False):
         
-        if opponent_policy == "interactive":
-            self.opponent_policy = self.interactive_play
-        else:
-            self.opponent_policy = opponent_policy
-        
+        self.show_board = show_board
+
         if board is None:
             board = player.EMPTY * np.ones((board_size, board_size))
 
+        config = ConfigParser()
+        config.read('config.ini')
+
+        if self.show_board:
+            self.interactive = InteractiveGame(config, board)
+
+        if opponent_policy == "interactive":
+            self.opponent_policy = self.interactive_play
+        elif opponent_policy == "NN":
+            self.opponent_policy = self.batched_single_move
+            self.model = load_model(f'minihex/models/{config.get("INTERACTIVE", "model", fallback="11_2w4_2000")}.pt')
+            self.temperature=0.1 #config.getfloat("INTERACTIVE", 'temperature', fallback=0.1)
+            self.temperature_decay=config.getfloat("INTERACTIVE", 'temperature_decay', fallback=1.)
+        else:
+            self.opponent_policy = opponent_policy
+        
+        self.board_size = board_size
         self.initial_board = board
         self.active_player = active_player
         self.player = player_color
@@ -171,14 +192,9 @@ class HexEnv(gym.Env):
         self.winner = None
         self.previous_opponent_move = None
         self.debug = debug
-        self.show_board = show_board
         # cache initial connection matrix (approx +100 games/s)
         self.initial_regions = regions
 
-        if self.show_board:
-            config = ConfigParser()
-            config.read('config.ini')
-            self.interactive = InteractiveGame(config, board)
 
     @property
     def opponent(self):
@@ -234,7 +250,6 @@ class HexEnv(gym.Env):
                 'last_move_player': self.previous_opponent_move
             }
             opponent_action = self.opponent_move(info_opponent)
-
         if self.show_board:
             self.interactive.gui.update_board(self.simulator.board)
 
@@ -296,3 +311,51 @@ class HexEnv(gym.Env):
         action = self.simulator.coordinate_to_action(action)
         # self.winner = self.simulator.fast_move(action)
         return action
+
+    ## NN functions
+    def batched_single_move(self, board, player,info):      
+        self.current_boards = []
+        self.current_boards_tensor = torch.Tensor()
+        # for board_idx in range(self.batch_size):
+        #     if self.boards[board_idx].winner == False:
+        #         self.current_boards.append(board_idx)
+        # breakpoint()
+        # self.current_boards_tensor = torch.Tensor((self.simulator.regions>0).astype(int))
+        self.current_boards_tensor = torch.Tensor(np.array((self.simulator.regions>0).astype(int))[np.newaxis])
+        self.current_boards.append(self.current_boards_tensor)
+        if self.current_boards == []:
+            return
+        # print(self.current_boards)
+        self.current_boards_tensor = self.current_boards_tensor.to(utils.device)
+
+        with torch.no_grad():
+            outputs_tensor = self.model(self.current_boards_tensor)
+
+        # if self.noise == 'singh':
+        #     noise_alpha, noise_beta, noise_lambda = self.noise_parameters
+        #     outputs_tensor = singh_maddala_onto_output(outputs_tensor, noise_alpha, noise_beta, noise_lambda)
+        # if self.noise == 'uniform':
+        #     noise_probability, = self.noise_parameters
+        #     outputs_tensor = uniform_noise_onto_output(outputs_tensor, noise_probability)
+
+        moves_count = 3.0
+        # moves_count = len(self.boards[self.current_boards[0]].made_moves)
+        positions1d = tempered_moves_selection(outputs_tensor, self.temperature*self.temperature_decay**moves_count)
+
+        # self.output_boards_tensor = torch.cat((self.output_boards_tensor, self.current_boards_tensor.detach().cpu()))
+        # self.positions_tensor = torch.cat((self.positions_tensor, positions1d.detach().cpu()))
+
+        # for idx in range(len(self.current_boards)):
+        correct_position = utils.correct_position1d(positions1d[0].item(), self.board_size,
+            0)
+        print(self.simulator.action_to_coordinate(correct_position))
+        # self.boards[self.current_boards[idx]].set_stone(correct_position)
+        return correct_position
+
+def tempered_moves_selection(output_tensor, temperature):
+    #samples with softmax from unnormalized values (if temp>0) and selects move
+    if temperature < 10**(-10):
+        return output_tensor.argmax(1)
+    else:
+        temperature_output = output_tensor/temperature
+        return Categorical(logits=temperature_output).sample()

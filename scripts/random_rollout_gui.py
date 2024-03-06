@@ -8,8 +8,10 @@ config = ConfigParser()
 config.read('config.ini')
 
 env = gym.make("hex-v0",
-               opponent_policy="interactive",
-               board_size=6, show_board=True)
+               opponent_policy="NN",
+            #    opponent_policy="interactice",
+            #    opponent_policy=minihex.random_policy,
+               board_size=11, show_board=True)
 
 state, info = env.reset()
 done = False
@@ -17,8 +19,8 @@ done = False
 
 while not done:
     board, player = state
-    # action = env.interactive_play(board, player, info)
-    action = minihex.random_policy(board, player, info)
+    action = env.interactive_play(board, player, info)
+    # action = minihex.random_policy(board, player, info)
     state, reward, done, info = env.step(action)
 
 env.render()

@@ -80,7 +80,7 @@ class InteractiveGame:
     def get_move(self):
         # actions = np.arange(self.board.shape[0] * self.board.shape[1])
         valid_actions = np.where(self.board == 2)
-        print(self.board)
+        # print(self.board)
         valid_actions = list(zip(valid_actions[0], valid_actions[1]))
         # print(valid_actions)
         while True:
