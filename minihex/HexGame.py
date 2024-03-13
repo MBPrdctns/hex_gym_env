@@ -149,6 +149,7 @@ class HexEnv(gym.Env):
     metadata = {"render.modes": ["ansi"]}
 
     def __init__(self, opponent_policy,
+                 opponent_model=None,
                  player_color=player.BLACK,
                  active_player=player.BLACK,
                  board=None,
@@ -159,12 +160,15 @@ class HexEnv(gym.Env):
         
         if opponent_policy == "interactive":
             self.opponent_policy = self.interactive_play
+            self.interactive = True
         else:
             self.opponent_policy = opponent_policy
+            self.interactive = False
         
         if board is None:
             board = player.EMPTY * np.ones((board_size, board_size))
-
+        
+        self.opponent_model = opponent_model
         self.initial_board = board
         self.active_player = active_player
         self.player = player_color
@@ -189,6 +193,7 @@ class HexEnv(gym.Env):
         return player((self.player + 1) % 2)
 
     def get_action_mask(self):
+        if self.player 
         return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
 
     def reset(self, seed=None, options=None):
@@ -226,13 +231,21 @@ class HexEnv(gym.Env):
         # state = np.stack([self.simulator.board, active_player_array], axis=0)
         # print(state)
         # print(self.observation_space)
+
         return self.simulator.board, info
 
     def step(self, action):
+        if self.player != player.BLACK:
+            self.invert_board()
+            y, x = self.simulator.action_to_coordinate(action)
+            action = self.simulator.coordinate_to_action((x, y))
+            
         if not self.simulator.done:
             self.winner = self.simulator.make_move(action)
             if self.winner == 3: # invalid move
                 self.simulator.done = True
+
+        
 
         opponent_action = None
 
@@ -263,8 +276,19 @@ class HexEnv(gym.Env):
         # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
         # state = np.stack([self.simulator.board, active_player_array], axis=0)
 
+        if self.player != player.BLACK:
+            self.invert_board()
+
         return (self.simulator.board, reward,
                 self.simulator.done, False, info)
+    
+    def invert_board(self):
+        board = self.simulator.board
+        inverted_board = board.T
+        inverted_board[inverted_board==player.BLACK] = -1 # placeholder
+        inverted_board[inverted_board==player.WHITE] = player.BLACK
+        inverted_board[inverted_board == -1] = player.WHITE
+        self.simulator.board = inverted_board
 
     def render(self, mode='ansi', close=False):
         
@@ -294,14 +318,26 @@ class HexEnv(gym.Env):
             print("")
 
     def opponent_move(self, info):
-        opponent_action = self.opponent_policy(self.simulator.board,
-                                               self.opponent,
-                                               info)
+        if (self.player == player.BLACK and not self.interactive): # if opponent plays black, invert board - model gets state always playing black
+            self.invert_board()
+        opponent_action = self.opponent_policy(self.simulator.board)
+        if self.player == player.BLACK and not self.interactive:
+            self.invert_board()
+            y, x = self.simulator.action_to_coordinate(opponent_action)
+            opponent_action = self.simulator.coordinate_to_action((x, y))
         self.winner = self.simulator.make_move(opponent_action)
         self.previous_opponent_move = opponent_action
+            
         return opponent_action
+    
+    def set_opponent_model(self, model):
+        self.opponent_model = model
+    
+    def opponent_predict(self, state):
+        action, _ = self.opponent_model.predict(state, deterministic=True, action_masks=self.get_action_mask())
+        return action
 
-    def interactive_play(self, board, player,info):
+    def interactive_play(self, board):
         self.interactive.board = board
         self.interactive.gui.update_board(board)
         action = self.interactive.play_move()

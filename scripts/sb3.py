@@ -11,6 +11,7 @@ def mask_fn(env: gym.Env) -> np.ndarray:
 
 env = gym.make("hex-v0",
                opponent_policy=minihex.random_policy,
+               player_color=minihex.player.BLACK,
                board_size=11)
 env = ActionMasker(env, mask_fn)
 
@@ -18,11 +19,11 @@ env = ActionMasker(env, mask_fn)
 
 # model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) # MaskablePPO("MlpPolicy", env, verbose=1)
 # model.learn(total_timesteps=400000, log_interval=4)
-# model.save("hex")
+# model.save("hex_test")
 
 # del model # remove to demonstrate saving and loading
 
-model = MaskablePPO.load("hex")
+model = MaskablePPO.load("hex_selfplay")
 
 obs, info = env.reset()
 
