@@ -6,32 +6,47 @@ from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.ppo_mask import MaskablePPO
 import numpy as np
 from functools import partial
-
+from minihex.HexGame import player as hex_player
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
-opponent_policy = minihex.random_policy
-player = minihex.player.BLACK
+#opponent_policy = minihex.random_policy
+player = hex_player.BLACK
+model = MaskablePPO.load("hex_selfplay")
 env = gym.make("hex-v0",
-               opponent_policy=opponent_policy,
+                opponent_model=model,
+               opponent_policy="opponent_predict",
                player_color=player,
                board_size=5)
 env = ActionMasker(env, mask_fn)
-model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+model.set_env(env)
+
+#env = gym.make("hex-v0",
+            #    opponent_policy=opponent_policy,
+            #    player_color=player,
+            #    board_size=5)
+#env = ActionMasker(env, mask_fn)
+#model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+state, info = env.reset()
 
 for i in range(100):
+    print("Iteration: ", i)
     
     model.learn(total_timesteps=40000, log_interval=4)
     model.save("hex_selfplay")
-    env.set_opponent_model(model)
-    opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
+
+    # env.set_opponent_model(model)
+    # opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
+
     env = gym.make("hex-v0",
-               opponent_policy=opponent_policy,
+                opponent_model=model,
+               opponent_policy="opponent_predict",
                player_color=player,
                board_size=5)
     env = ActionMasker(env, mask_fn)
     model.set_env(env)
-    print("Iteration: ", i)
+    state, info = env.reset()
+
 #del model # remove to demonstrate saving and loading
 
 

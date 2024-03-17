@@ -2,7 +2,8 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from enum import IntEnum
-
+import random
+from minihex.__init__ import random_policy 
 from minihex.interactive.interactive import InteractiveGame
 from configparser import ConfigParser
 
@@ -161,6 +162,9 @@ class HexEnv(gym.Env):
         if opponent_policy == "interactive":
             self.opponent_policy = self.interactive_play
             self.interactive = True
+        elif opponent_policy == "opponent_predict":
+            self.opponent_policy = self.opponent_predict
+            self.interactive=False
         else:
             self.opponent_policy = opponent_policy
             self.interactive = False
@@ -193,7 +197,6 @@ class HexEnv(gym.Env):
         return player((self.player + 1) % 2)
 
     def get_action_mask(self):
-        if self.player 
         return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
 
     def reset(self, seed=None, options=None):
@@ -283,7 +286,7 @@ class HexEnv(gym.Env):
                 self.simulator.done, False, info)
     
     def invert_board(self):
-        board = self.simulator.board
+        board = self.simulator.board.copy()
         inverted_board = board.T
         inverted_board[inverted_board==player.BLACK] = -1 # placeholder
         inverted_board[inverted_board==player.WHITE] = player.BLACK
@@ -320,11 +323,17 @@ class HexEnv(gym.Env):
     def opponent_move(self, info):
         if (self.player == player.BLACK and not self.interactive): # if opponent plays black, invert board - model gets state always playing black
             self.invert_board()
+            # print(self.simulator.board)
         opponent_action = self.opponent_policy(self.simulator.board)
+        # print(opponent_action)
         if self.player == player.BLACK and not self.interactive:
             self.invert_board()
+            # print(self.simulator.board)
             y, x = self.simulator.action_to_coordinate(opponent_action)
             opponent_action = self.simulator.coordinate_to_action((x, y))
+            # print(opponent_action)
+
+        # 1
         self.winner = self.simulator.make_move(opponent_action)
         self.previous_opponent_move = opponent_action
             
@@ -334,6 +343,9 @@ class HexEnv(gym.Env):
         self.opponent_model = model
     
     def opponent_predict(self, state):
+        eps = random.uniform(0,1)
+        if eps < 0.2:
+            return random_policy(state)
         action, _ = self.opponent_model.predict(state, deterministic=True, action_masks=self.get_action_mask())
         return action
 
