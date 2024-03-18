@@ -6,6 +6,7 @@ from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.ppo_mask import MaskablePPO
 from minihex.interactive.interactive import InteractiveGame
 from configparser import ConfigParser
+from minihex.HexGame import player as hex_player
 
 
 def mask_fn(env: gym.Env) -> np.ndarray:
@@ -17,7 +18,7 @@ config.read('config.ini')
 
 env = gym.make("hex-v0",
                 opponent_policy="interactive",
-                player_color=minihex.player.BLACK,
+                player_color=hex_player.BLACK,
                 board_size=5, show_board=True)
 env = ActionMasker(env, mask_fn)
 model = MaskablePPO.load("hex_selfplay")
