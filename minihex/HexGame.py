@@ -157,7 +157,8 @@ class HexEnv(gym.Env):
                  regions=None,
                  board_size=5,
                  debug=False,
-                 show_board=False):
+                 show_board=False,
+                 eps=0.5):
         
         if opponent_policy == "interactive":
             self.opponent_policy = self.interactive_play
@@ -171,7 +172,8 @@ class HexEnv(gym.Env):
         
         if board is None:
             board = player.EMPTY * np.ones((board_size, board_size))
-        
+
+        self.eps = eps
         self.opponent_model = opponent_model
         self.initial_board = board
         self.active_player = active_player
@@ -261,9 +263,12 @@ class HexEnv(gym.Env):
             opponent_action = self.opponent_move(info_opponent)
 
         if self.winner == self.player:
-            reward = 1
+            # reward = 1
+            reward = (self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum()
+            # print(reward)
         elif self.winner == self.opponent:
-            reward = -1
+            reward = - ((self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum())
+            # print(reward)
         elif self.winner == 3: # invalid move
             reward = -100
         else:
@@ -343,8 +348,8 @@ class HexEnv(gym.Env):
         self.opponent_model = model
     
     def opponent_predict(self, state):
-        eps = random.uniform(0,1)
-        if eps < 0.2:
+        rv = random.uniform(0,1)
+        if rv < self.eps:
             return random_policy(state)
         action, _ = self.opponent_model.predict(state, deterministic=True, action_masks=self.get_action_mask())
         return action

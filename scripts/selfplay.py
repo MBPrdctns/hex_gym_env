@@ -10,15 +10,18 @@ from minihex.HexGame import player as hex_player
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
-#opponent_policy = minihex.random_policy
+opponent_policy = minihex.random_policy
 player = hex_player.BLACK
-model = MaskablePPO.load("hex_selfplay")
+# model = MaskablePPO.load("hex_selfplay")
 env = gym.make("hex-v0",
-                opponent_model=model,
-               opponent_policy="opponent_predict",
+                # opponent_model=model,
+               opponent_policy = opponent_policy,
                player_color=player,
-               board_size=5)
+               board_size=5,
+               eps=0.5)
 env = ActionMasker(env, mask_fn)
+
+model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 model.set_env(env)
 
 #env = gym.make("hex-v0",
@@ -33,7 +36,7 @@ for i in range(100):
     print("Iteration: ", i)
     
     model.learn(total_timesteps=40000, log_interval=4)
-    model.save("hex_selfplay")
+    model.save("hex_selfplay_eps")
 
     # env.set_opponent_model(model)
     # opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
@@ -42,7 +45,8 @@ for i in range(100):
                 opponent_model=model,
                opponent_policy="opponent_predict",
                player_color=player,
-               board_size=5)
+               board_size=5,
+               eps = 0.5/(i+1))
     env = ActionMasker(env, mask_fn)
     model.set_env(env)
     state, info = env.reset()
