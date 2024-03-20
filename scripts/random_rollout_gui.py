@@ -21,7 +21,7 @@ env = gym.make("hex-v0",
                 player_color=hex_player.BLACK,
                 board_size=5, show_board=True)
 env = ActionMasker(env, mask_fn)
-model = MaskablePPO.load("hex_selfplay_slow_lr_0015")
+model = MaskablePPO.load("hex_selfplay_shuffled_history")
 print(model.learning_rate)
 state, info = env.reset()
 terminated = False

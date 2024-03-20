@@ -7,6 +7,7 @@ models overview:
 - hex_selfplay_eps_reversed_quick: base hex_selfplay_eps_reversed then selfplay, but every other loop use hex_selfplay_eps and with epsilon random, reward long gameplays
 - hex_selfplay_slow_lr_003: train first random then selfplay with decreasing epsilon random, reward {-1, 1}, learning rate 0.003
 - hex_selfplay_slow_lr_0015: base hex_selfplay_slow_lr_003 then selfplay with decreasing epsilon random, reward {-1, 1}, learning rate 0.0015
+- hex_selfplay
 
 Remarks:
 - learning_rate default: 0.0003
@@ -31,8 +32,8 @@ def mask_fn(env: gym.Env) -> np.ndarray:
 
 opponent_policy = minihex.random_policy
 player = hex_player.BLACK
-# model = MaskablePPO.load("hex_selfplay_slow_lr_003")
-# model.learning_rate = 0.0015 ## overwrite
+model = MaskablePPO.load("hex_selfplay_shuffled_history")
+model.learning_rate = 0.001 ## overwrite
 
 env = gym.make("hex-v0",
                 # opponent_model=model,
@@ -40,10 +41,10 @@ env = gym.make("hex-v0",
                 opponent_policy = opponent_policy,
                 player_color=player,
                 board_size=5,
-                eps=0.7)
+                eps=0)
 env = ActionMasker(env, mask_fn)
 
-model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+# model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 model.set_env(env)
 
 #env = gym.make("hex-v0",
@@ -56,7 +57,7 @@ state, info = env.reset()
 
 model_history = []
 
-for i in range(1000):
+for i in range(2000):
     print("Iteration: ", i)
     
     model.learn(total_timesteps=500, log_interval=4)
@@ -65,6 +66,11 @@ for i in range(1000):
 
     if not i % 10:
         model_history.append(model)
+
+    if i % 2:
+        active_player = hex_player.WHITE
+    else:
+        active_player = hex_player.BLACK
 
     opponent_model = random.choice(model_history)
 
@@ -75,8 +81,9 @@ for i in range(1000):
                 opponent_model=opponent_model,
                 opponent_policy="opponent_predict",
                 player_color=player,
-                board_size=5
-                # eps = 0.3 * (1 - i/100)
+                active_player=active_player,
+                board_size=5,
+                eps = 0 #.3 * (1 - i/100)
                 )
     env = ActionMasker(env, mask_fn)
     model.set_env(env)
