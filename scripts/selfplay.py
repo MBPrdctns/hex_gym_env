@@ -1,3 +1,20 @@
+"""
+models overview:
+
+- hex_selfplay: train first random then selfplay only
+- hex_selfplay_eps: train first random then selfplay and with epsilon random, reward short gameplays
+- hex_selfplay_eps_reversed: train first random then selfplay and with epsilon random, reward long gameplays
+- hex_selfplay_eps_reversed_quick: base hex_selfplay_eps_reversed then selfplay, but every other loop use hex_selfplay_eps and with epsilon random, reward long gameplays
+- hex_selfplay_slow_lr_003: train first random then selfplay with decreasing epsilon random, reward {-1, 1}, learning rate 0.003
+- hex_selfplay_slow_lr_0015: base hex_selfplay_slow_lr_003 then selfplay with decreasing epsilon random, reward {-1, 1}, learning rate 0.0015
+
+Remarks:
+- learning_rate default: 0.0003
+"""
+
+
+
+
 import minihex
 import gymnasium as gym
 from stable_baselines3 import DQN, PPO
@@ -7,18 +24,23 @@ from sb3_contrib.ppo_mask import MaskablePPO
 import numpy as np
 from functools import partial
 from minihex.HexGame import player as hex_player
+import random
+
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
 opponent_policy = minihex.random_policy
 player = hex_player.BLACK
-# model = MaskablePPO.load("hex_selfplay")
+# model = MaskablePPO.load("hex_selfplay_slow_lr_003")
+# model.learning_rate = 0.0015 ## overwrite
+
 env = gym.make("hex-v0",
                 # opponent_model=model,
-               opponent_policy = opponent_policy,
-               player_color=player,
-               board_size=5,
-               eps=0.5)
+                # opponent_policy = "opponent_predict",
+                opponent_policy = opponent_policy,
+                player_color=player,
+                board_size=5,
+                eps=0.7)
 env = ActionMasker(env, mask_fn)
 
 model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
@@ -29,55 +51,35 @@ model.set_env(env)
             #    player_color=player,
             #    board_size=5)
 #env = ActionMasker(env, mask_fn)
-#model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+# model = MaskablePPO(MaskableActorCriticPolicy, env, learning_rate=0.0015, verbose=1) 
 state, info = env.reset()
 
-for i in range(100):
+model_history = []
+
+for i in range(1000):
     print("Iteration: ", i)
     
-    model.learn(total_timesteps=40000, log_interval=4)
-    model.save("hex_selfplay_eps")
+    model.learn(total_timesteps=500, log_interval=4)
+    # model.save("hex_selfplay_slow_lr_0015")
+    # model.learning_rate = 0.003 - i * 0.000027 ## overwrite lr
+
+    if not i % 10:
+        model_history.append(model)
+
+    opponent_model = random.choice(model_history)
 
     # env.set_opponent_model(model)
     # opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
 
     env = gym.make("hex-v0",
-                opponent_model=model,
-               opponent_policy="opponent_predict",
-               player_color=player,
-               board_size=5,
-               eps = 0.5/(i+1))
+                opponent_model=opponent_model,
+                opponent_policy="opponent_predict",
+                player_color=player,
+                board_size=5
+                # eps = 0.3 * (1 - i/100)
+                )
     env = ActionMasker(env, mask_fn)
     model.set_env(env)
     state, info = env.reset()
-
+model.save("hex_selfplay_shuffled_history")
 #del model # remove to demonstrate saving and loading
-
-
-env = gym.make("hex-v0",
-               opponent_policy=opponent_policy,
-               player_color=player,
-               board_size=5)
-env = ActionMasker(env, mask_fn)
-model = MaskablePPO.load("hex_selfplay")
-obs, info = env.reset()
-
-episodes = 100
-winners = []
-for ep in range (episodes):
-    obs, info = env.reset()
-    terminated = False
-    while not terminated:
-        # env.render()
-        action, _states = model.predict(obs, deterministic=True, action_masks=env.get_action_mask())
-        obs, reward, terminated, truncated, info = env.step(action)
-    winners.append(info["winner"])
-    print(info["winner"], "won!")
-
-    #env.render()
-# while True:
-#     action, _states = model.predict(obs, deterministic=True)
-#     obs, reward, terminated, truncated, info = env.step(action)
-#     if terminated or truncated:
-#         print(info["state"])
-#         obs, info = env.reset()

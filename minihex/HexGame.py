@@ -263,11 +263,13 @@ class HexEnv(gym.Env):
             opponent_action = self.opponent_move(info_opponent)
 
         if self.winner == self.player:
-            # reward = 1
-            reward = (self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum()
+            reward = 1
+            # reward = (self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum()
+            # reward = (self.simulator.board == self.player).sum()
             # print(reward)
         elif self.winner == self.opponent:
-            reward = - ((self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum())
+            # reward = - 12 # (self.simulator.board == self.player).sum()
+            reward = -1
             # print(reward)
         elif self.winner == 3: # invalid move
             reward = -100
