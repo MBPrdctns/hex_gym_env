@@ -18,7 +18,8 @@ config.read('config.ini')
 
 env = gym.make("hex-v0",
                 opponent_policy="interactive",
-                player_color=minihex.player.BLACK,
+                player_color=hex_player.BLACK,
+                active_player=hex_player.WHITE,
                 board_size=5, show_board=True)
 env = ActionMasker(env, mask_fn)
 model = MaskablePPO.load("hex_selfplay_shuffled_history")
