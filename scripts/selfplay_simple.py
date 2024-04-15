@@ -32,13 +32,13 @@ def mask_fn(env: gym.Env) -> np.ndarray:
 
 opponent_policy = minihex.random_policy
 player = hex_player.BLACK
-model = MaskablePPO.load("hex_selfplay_history")
-# model.learning_rate = 0.001 ## overwrite
+model = MaskablePPO.load("hex_selfplay_shuffled_history")
+model.learning_rate = 0.001 ## overwrite
 
 env = gym.make("hex-v0",
-                opponent_model=model,
-                opponent_policy = "opponent_predict",
-                # opponent_policy = opponent_policy,
+                # opponent_model=model,
+                # opponent_policy = "opponent_predict",
+                opponent_policy = opponent_policy,
                 player_color=player,
                 board_size=5,
                 eps=0)
@@ -47,34 +47,32 @@ env = ActionMasker(env, mask_fn)
 # model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 model.set_env(env)
 
-# env = gym.make("hex-v0",
-#             #    opponent_policy=opponent_policy,
-#                opponent_policy=model,
-#                player_color=player,
-#                board_size=5)
-# env = ActionMasker(env, mask_fn)
+#env = gym.make("hex-v0",
+            #    opponent_policy=opponent_policy,
+            #    player_color=player,
+            #    board_size=5)
+#env = ActionMasker(env, mask_fn)
 # model = MaskablePPO(MaskableActorCriticPolicy, env, learning_rate=0.0015, verbose=1) 
 state, info = env.reset()
 
-model_history = [model]
+model_history = []
 
 for i in range(2000):
     print("Iteration: ", i)
     
-    model.learn(total_timesteps=100, log_interval=4)
+    model.learn(total_timesteps=500, log_interval=4)
     # model.save("hex_selfplay_slow_lr_0015")
     # model.learning_rate = 0.003 - i * 0.000027 ## overwrite lr
-    if not i % 100:
+
+    if not i % 10:
         model_history.append(model)
 
-    # if i % 2:
-    current_player_num = hex_player.WHITE
-    # else:
-    #     current_player_num = hex_player.BLACK
-    if random.uniform(0,1) > 0.8 and len(model_history) > 1:
-        opponent_model = random.choice(model_history[:-1])
+    if i % 2:
+        current_player_num = hex_player.WHITE
     else:
-        opponent_model = model_history[-1]
+        current_player_num = hex_player.BLACK
+
+    opponent_model = random.choice(model_history)
 
     # env.set_opponent_model(model)
     # opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
@@ -85,10 +83,10 @@ for i in range(2000):
                 player_color=player,
                 current_player_num=current_player_num,
                 board_size=5,
-                # eps = 0 #.3 * (1 - i/100)
+                eps = 0 #.3 * (1 - i/100)
                 )
     env = ActionMasker(env, mask_fn)
     model.set_env(env)
     state, info = env.reset()
-model.save("hex_selfplay_history")
+model.save("hex_selfplay_shuffled_history")
 #del model # remove to demonstrate saving and loading

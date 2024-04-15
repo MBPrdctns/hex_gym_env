@@ -19,11 +19,10 @@ config.read('config.ini')
 env = gym.make("hex-v0",
                 opponent_policy="interactive",
                 player_color=hex_player.BLACK,
-                active_player=hex_player.WHITE,
+                # current_player_num = hex_player.WHITE,
                 board_size=5, show_board=True)
 env = ActionMasker(env, mask_fn)
-model = MaskablePPO.load("hex_selfplay_shuffled_history")
-print(model.learning_rate)
+model = MaskablePPO.load("hex_selfplay_history")
 state, info = env.reset()
 terminated = False
 # interactive = InteractiveGame(config, env)
