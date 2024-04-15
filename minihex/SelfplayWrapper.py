@@ -39,7 +39,13 @@ def selfplay_wrapper(env):
             if self.current_player_num != self.agent_player_num:   
                 self.continue_game()
 
-            return self.simulator.board
+            info = {
+                'state': self.simulator.board,
+                'last_move_opponent': None, # self.previous_opponent_move,
+                'last_move_player': None
+            }
+
+            return self.simulator.board, info
     
         def setup_opponents(self):
             rv = random.uniform(0,1)
@@ -61,18 +67,18 @@ def selfplay_wrapper(env):
             return self.best_mean_reward
 
         def continue_game(self):
-            observation = None
+            observation = None 
             reward = None
             done = None
 
-            self.render()
+            # self.render()
             action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
 
             return observation, reward, done, None
 
         def step(self, action):
-            self.render()
+            # self.render()
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
 
             if not done:
@@ -82,8 +88,8 @@ def selfplay_wrapper(env):
 
             agent_reward = reward[self.agent_player_num]
 
-            if done:
-                self.render()
+            # if done:
+                # self.render()
 
-            return observation, agent_reward, done, {} 
+            return observation, agent_reward, done, False, {} 
     return SelfPlayEnv

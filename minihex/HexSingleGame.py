@@ -104,7 +104,8 @@ class HexGame(object):
         regions = self.regions[self.current_player_num]
         if regions[-1, -1] == 1:
             self.done = True
-            winner = player(self.current_player_num)
+            winner = self.current_player_num
+            # winner = player(self.current_player_num)
             self.winner = winner
         elif self.empty_fields <= 0:
             self.done = True

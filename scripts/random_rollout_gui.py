@@ -22,7 +22,7 @@ env = gym.make("hex-v0",
                 # current_player_num = hex_player.WHITE,
                 board_size=5, show_board=True)
 env = ActionMasker(env, mask_fn)
-model = MaskablePPO.load("hex_selfplay_history")
+model = MaskablePPO.load("hex_selfplay_new")
 state, info = env.reset()
 terminated = False
 # interactive = InteractiveGame(config, env)

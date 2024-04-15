@@ -42,8 +42,8 @@ env = ActionMasker(env, mask_fn)
 
 model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 
-callback = SelfPlayCallback(eval_env=env)
-model.learn(100000, callback=[callback])
+callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=10000) #  eval_freq defaul 10000
+model.learn(1e7, callback=[callback])
 model.save("hex_selfplay_new")
 
 # for i in range(1000):
