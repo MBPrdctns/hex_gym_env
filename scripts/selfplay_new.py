@@ -32,44 +32,14 @@ from minihex.EvaluationCallback import SelfPlayCallback
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.legal_actions()
 
-# opponent_policy = minihex.random_policy
-# player = hex_player.BLACK
-# model = MaskablePPO.load("hex_selfplay_slow_lr_003")
-# model.learning_rate = 0.0015 ## overwrite
+model = MaskablePPO.load("hex_selfplay_new")
 
-env = selfplay_wrapper(HexEnv)()
+env = selfplay_wrapper(HexEnv)(base_model=model)
 env = ActionMasker(env, mask_fn)
 
-model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+model.set_env(env)
+# model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 
 callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=10000) #  eval_freq defaul 10000
-model.learn(1e7, callback=[callback])
+model.learn(5e6, callback=[callback])
 model.save("hex_selfplay_new")
-
-# for i in range(1000):
-#     print("Iteration: ", i)
-    
-#     model.learn(total_timesteps=500, log_interval=4)
-#     # model.save("hex_selfplay_slow_lr_0015")
-#     # model.learning_rate = 0.003 - i * 0.000027 ## overwrite lr
-
-#     if not i % 10:
-#         model_history.append(model)
-
-#     opponent_model = random.choice(model_history)
-
-#     # env.set_opponent_model(model)
-#     # opponent_policy = env.opponent_predict #, deterministic=True, action_masks=env.get_action_mask())
-
-#     env = gym.make("hex-v0",
-#                 opponent_model=opponent_model,
-#                 opponent_policy="opponent_predict",
-#                 player_color=player,
-#                 board_size=5,
-#                 eps = 0
-#                 )
-#     env = ActionMasker(env, mask_fn)
-#     model.set_env(env)
-#     state, info = env.reset()
-# model.save("hex_selfplay_shuffled_history")
-# #del model # remove to demonstrate saving and loading

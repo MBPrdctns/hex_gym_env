@@ -25,22 +25,12 @@ env = ActionMasker(env, mask_fn)
 model = MaskablePPO.load("hex_selfplay_new")
 state, info = env.reset()
 terminated = False
-# interactive = InteractiveGame(config, env)
 
 while not terminated:
-    print("while")
-    # breakpoint()
     board = state
-    # breakpoint()
-    # interactive.board = board
-    # interactive.gui.update_board(board)
-    # action = interactive.play_move()
-    # print(action)
-    # action = env.simulator.coordinate_to_action(action)
-    # winner = env.simulator.fast_move(action)
     action, _states = model.predict(state, deterministic=True, action_masks=env.get_action_mask())
-    state, reward, terminated, truncated, info = env.step(action) # minihex.random_policy(board, player, info)
-    # state, reward, done, info = env.step(action)
+    state, reward, terminated, truncated, info = env.step(action)
+
 
 env.render()
 
@@ -49,4 +39,5 @@ if reward == -1:
 elif reward == 1:
     print("Player (Black) Won")
 else:
+    breakpoint()
     print("Draw")

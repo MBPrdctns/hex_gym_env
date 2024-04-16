@@ -103,9 +103,9 @@ class HexGame(object):
             self.done = True
             winner = player(self.current_player_num)
             self.winner = winner
-        elif self.empty_fields <= 0:
-            self.done = True
-            winner = None
+        # elif self.empty_fields <= 0:
+        #     self.done = True
+        #     winner = None
 
         self.current_player_num = (self.current_player_num + 1) % 2
         return winner
