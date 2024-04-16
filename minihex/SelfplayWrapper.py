@@ -27,7 +27,7 @@ def selfplay_wrapper(env):
     class SelfPlayEnv(env):
         def __init__(self, base_model=BaseRandomPolicy()):
             super(SelfPlayEnv, self).__init__()
-            
+
             if base_model != BaseRandomPolicy:
                 base_model = OpponentPolicy(base_model)
 
@@ -54,7 +54,7 @@ def selfplay_wrapper(env):
         def setup_opponents(self):
             rv = random.uniform(0,1)
             if rv < 0.8:
-                i = int(random.random() * len(self.opponent_models))
+                i = int(random.random() * len(self.best_model))
                 self.opponent_model = self.best_model[i]
             else:
                 i = int(random.random() * len(self.opponent_models))
