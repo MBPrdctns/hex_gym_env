@@ -18,7 +18,7 @@ Remarks:
 import minihex
 import gymnasium as gym
 from stable_baselines3 import DQN, PPO
-from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
+from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy, MaskableActorCriticCnnPolicy
 from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.ppo_mask import MaskablePPO
 import numpy as np
