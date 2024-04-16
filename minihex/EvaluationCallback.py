@@ -24,8 +24,8 @@ class SelfPlayCallback(EvalCallback):
             result = super(SelfPlayCallback, self)._on_step() #this will set self.best_mean_reward to the reward from the evaluation as it's previously -np.inf
             if self.last_mean_reward > 0.2:
                 print(f"Number of models in buffer: {len(self.gym_env.opponent_models)}")
-                print(f"Number of models in best buffer: {len(self.gym_env.best_model)}")
-                if self.last_mean_reward >= 0.8: #self.gym_env.get_best_mean_reward():
+                # print(f"Number of models in best buffer: {len(self.gym_env.best_model)}")
+                if self.last_mean_reward >= self.gym_env.get_best_mean_reward():
                     self.gym_env.append_opponent_model(self.model, True, self.last_mean_reward)
                 else:
                     self.gym_env.append_opponent_model(self.model)

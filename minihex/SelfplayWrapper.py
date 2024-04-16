@@ -54,8 +54,9 @@ def selfplay_wrapper(env):
         def setup_opponents(self):
             rv = random.uniform(0,1)
             if rv < 0.8:
-                i = int(random.random() * len(self.best_model))
-                self.opponent_model = self.best_model[i]
+                # i = int(random.random() * len(self.best_model))
+                # self.opponent_model = self.best_model[i]
+                self.opponent_model = self.best_model
             else:
                 i = int(random.random() * len(self.opponent_models))
                 self.opponent_model = self.opponent_models[i]
@@ -63,7 +64,7 @@ def selfplay_wrapper(env):
         def append_opponent_model(self, opponent_model, best_model = False, mean_reward = None):
             new_opponent = OpponentPolicy(opponent_model)
             if best_model:
-                self.best_model.append(new_opponent)
+                self.best_model = new_opponent
                 self.best_mean_reward = mean_reward
             
             self.opponent_models.append(new_opponent)
