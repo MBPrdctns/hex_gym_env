@@ -1,7 +1,9 @@
-from stable_baselines3.common.callbacks import EvalCallback
+# from stable_baselines3.common.callbacks import EvalCallback
 # from callbacks import EvalCallback
 
-class SelfPlayCallback(EvalCallback):
+from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
+
+class SelfPlayCallback(MaskableEvalCallback):
     """
     A custom callback that derives from ``BaseCallback``.
 

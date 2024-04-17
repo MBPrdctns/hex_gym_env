@@ -28,11 +28,11 @@ def selfplay_wrapper(env):
         def __init__(self, base_model=BaseRandomPolicy()):
             super(SelfPlayEnv, self).__init__()
 
-            if base_model != BaseRandomPolicy:
+            if type(base_model) != BaseRandomPolicy:
                 base_model = OpponentPolicy(base_model)
 
             self.opponent_models = [base_model]
-            self.best_model = [base_model]
+            self.best_model = base_model
             self.best_mean_reward = -np.inf
 
         def reset(self, seed=None, options=None):

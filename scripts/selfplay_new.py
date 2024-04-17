@@ -29,17 +29,24 @@ from minihex.HexSingleGame import HexEnv
 from minihex.SelfplayWrapper import selfplay_wrapper
 from minihex.EvaluationCallback import SelfPlayCallback
 
+
+from minihex.models.customPolicies import CustomPolicy
+
+N = 1e7
+
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.legal_actions()
 
-model = MaskablePPO.load("hex_selfplay_new")
+CustomPolicy = CustomPolicy
+# model = MaskablePPO.load("hex_selfplay_new")
 
-env = selfplay_wrapper(HexEnv)(base_model=model)
+env = selfplay_wrapper(HexEnv)() #(base_model=model)
 env = ActionMasker(env, mask_fn)
+# model.set_env(env)
 
-model.set_env(env)
-# model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
+# model = MaskablePPO(CustomPolicy, env, verbose=1)
+model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 
-callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=10000) #  eval_freq defaul 10000
-model.learn(5e6, callback=[callback])
-model.save("hex_selfplay_new")
+callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq = 100000) #  eval_freq defaul 10000
+model.learn(N, callback=[callback])
+# model.save("hex_selfplay_new_nn")

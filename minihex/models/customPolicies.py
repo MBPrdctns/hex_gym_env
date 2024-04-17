@@ -3,20 +3,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.policies import ActorCriticPolicy
 
+from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 
-class CustomPolicy(ActorCriticPolicy):
+class CustomPolicy(MaskableActorCriticPolicy):
     def __init__(self, observation_space, action_space, lr_schedule, net_arch=None, activation_fn=torch.nn.Tanh,
-                 *args, device='cpu', **kwargs):
+                 *args, device='auto', **kwargs):
         super(CustomPolicy, self).__init__(observation_space, action_space,
                                           lr_schedule, net_arch, activation_fn,
                                           *args, **kwargs)
 
-        self.device = device
+        # self.device = device
 
         extracted_features = self.resnet_extractor(self.processed_obs, **kwargs)
         self._policy = self.policy_head(extracted_features)
         self._value_fn = self.value_head(extracted_features)[0]
         self.q_value = self.value_head(extracted_features)[1]
+        
 
         self._proba_distribution  = torch.distributions.Categorical(self._policy)
 
