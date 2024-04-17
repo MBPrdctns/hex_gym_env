@@ -20,7 +20,9 @@ class CustomPolicy(BaseFeaturesExtractor):
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, obs):
-        return self.linear(self.extracted_features(obs.unsqueeze(0)))
+        features = self.extracted_features(obs.unsqueeze(0))
+        features = features.view(features.size(0), -1)  # Flatten the tensor
+        return self.linear(features)
 
 
 class ResNetExtractor(nn.Module):
@@ -30,12 +32,14 @@ class ResNetExtractor(nn.Module):
         self.residual1 = residual(32, 32, 4)
         self.residual2 = residual(32, 32, 4)
         self.residual3 = residual(32, 32, 4)
+        self.flatten = nn.Flatten()
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.residual1(x)
         x = self.residual2(x)
         x = self.residual3(x)
+        x = self.flatten(x)
         return x
 
 def convolutional(in_channels, filters, kernel_size):
