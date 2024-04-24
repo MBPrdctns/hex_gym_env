@@ -14,6 +14,8 @@ class BaseRandomPolicy(object):
         choice = int(random.random() * len(valid_actions))
         action = valid_actions[choice]
         return action
+    def save_model(self, path):
+        return None
 
 class OpponentPolicy(object):
     def __init__(self, model):
@@ -23,18 +25,23 @@ class OpponentPolicy(object):
         action, _ = self.opponent_model.predict(board, deterministic=True, action_masks=action_mask)
         return action
     
+    def save_model(self, path):
+        self.opponent_model.save(path)
+    
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy()):
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20)):
             super(SelfPlayEnv, self).__init__()
 
             if type(base_model) != BaseRandomPolicy:
+                self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(20)])
+                self.opponent_scores = scores
                 base_model = OpponentPolicy(base_model)
-    
-            self.opponent_models = np.array([base_model for _ in range(20)])
-            self.opponent_scores = np.array(range(20)) #np.zeros(20)
+            else:
+                self.opponent_models = np.array([BaseRandomPolicy() for _ in range(20)])
+                self.opponent_scores = np.zeros(20) #np.array(range(20)) 
             self.best_model = base_model
-            self.best_score = 0
+            self.best_score = np.max(self.opponent_scores)
             self.best_mean_reward = -np.inf
             self.eval_state = False
             self.eval_episode = 0
@@ -57,14 +64,14 @@ def selfplay_wrapper(env):
             return self.simulator.board, info
     
         def setup_opponents(self):
-            if self.eval_state:
-                if self.eval_episode > 19:
-                    print("EVAL EPISODE EXCEEDED: ", self.eval_episode)
-                else:
-                    self.opponent_model = self.opponent_models[self.eval_episode]
-                    self.eval_episode += 1
-                return None
-            rv = 1 #random.uniform(0,1)
+            # if self.eval_state:
+            #     if self.eval_episode > 19:
+            #         print("EVAL EPISODE EXCEEDED: ", self.eval_episode)
+            #     else:
+            #         self.opponent_model = self.opponent_models[self.eval_episode]
+            #         self.eval_episode += 1
+            #     return None
+            rv = random.uniform(0,1)
             if rv < 0.8:
                 # i = int(random.random() * len(self.best_model))
                 # self.opponent_model = self.best_model[i]
@@ -93,15 +100,26 @@ def selfplay_wrapper(env):
             return self.opponent_scores
         
         def set_opponent_model(self, index, model, score):
-            self.opponent_models[index] = OpponentPolicy(model)
-            self.opponent_scores += 1
+            print("Previous model scores: ", self.opponent_scores)
+            model = OpponentPolicy(model)
+            self.opponent_models[index] = model
+            #self.opponent_scores += 1
             self.opponent_scores[index] = score
-            #if score > self.best_score:
-            #    self.best_model = model
+            print("Replaced model from index: ", index)
+            print("Model score: ", score)
+            if score > self.best_score:
+                self.best_model = model
+                self.best_score = score
+                print("NEW BEST MODEL WITH SCORE: ", score)
+                
         
         def get_opponent_models(self):
             return self.opponent_models
         
+        def save_best_model(self):
+            model_name = "best_model_" + str(self.best_score)
+            self.best_model.save_model(model_name)
+
         def continue_game(self):
             observation = None 
             reward = None

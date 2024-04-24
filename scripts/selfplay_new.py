@@ -49,6 +49,6 @@ policy_kwargs = dict(
 )
 model = MaskablePPO("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs, tensorboard_log= "log/") 
 
-callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=1000, n_eval_episodes=20) #  eval_freq defaul 10000
+callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=10000, n_eval_episodes=20) #  eval_freq defaul 10000
 model.learn(1e6, callback=[callback])
 model.save("hex_selfplay_new")
