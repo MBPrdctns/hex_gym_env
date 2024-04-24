@@ -14,13 +14,13 @@ class CustomPolicy(BaseFeaturesExtractor):
     
         with th.no_grad():
             n_flatten = self.extracted_features(
-                th.as_tensor(observation_space.sample()[None]).float().unsqueeze(0)
+                th.as_tensor(observation_space.sample()[None]).float().unsqueeze(1)
             ).shape[1]
 
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, obs):
-        features = self.extracted_features(obs.unsqueeze(0))
+        features = self.extracted_features(obs.unsqueeze(1))
         features = features.view(features.size(0), -1)  # Flatten the tensor
         return self.linear(features)
 
@@ -28,13 +28,14 @@ class CustomPolicy(BaseFeaturesExtractor):
 class ResNetExtractor(nn.Module):
     def __init__(self):
         super(ResNetExtractor, self).__init__()
-        self.conv1 = convolutional(1, 32, 4) 
-        self.residual1 = residual(32, 32, 4)
-        self.residual2 = residual(32, 32, 4)
-        self.residual3 = residual(32, 32, 4)
+        self.conv1 = convolutional(1, 32, 3) 
+        self.residual1 = residual(32, 32, 3)
+        self.residual2 = residual(32, 32, 3)
+        self.residual3 = residual(32, 32, 3)
         self.flatten = nn.Flatten()
 
     def forward(self, x):
+        # print(x)
         x = self.conv1(x)
         x = self.residual1(x)
         x = self.residual2(x)

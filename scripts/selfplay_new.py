@@ -47,7 +47,7 @@ policy_kwargs = dict(
     features_extractor_class=CustomPolicy,
     features_extractor_kwargs=dict(features_dim=128),
 )
-model = MaskablePPO("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs) 
+model = MaskablePPO("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs, tensorboard_log= "log/") 
 
 callback = SelfPlayCallback(eval_env=env, gym_env=env, eval_freq=10000) #  eval_freq defaul 10000
 model.learn(5e6, callback=[callback])
