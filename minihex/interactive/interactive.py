@@ -13,26 +13,19 @@ class InteractiveGame:
     allows to play a game against a model
     """
 
-    def __init__(self, config, board):
+    def __init__(self, board):
+
+        config = ConfigParser()
+        config.read('config.ini')
+        
         self.config = config
-        # self.model = load_model(f'models/{self.config.get("INTERACTIVE", "model", fallback="11_2w4_2000")}.pt')
-        # self.model = RandomModel(board_size=11)
         self.switch_allowed = False # self.config.getboolean("INTERACTIVE", 'switch', fallback=True)
 
-        # self.board = Board(size=self.model.board_size, switch_allowed=self.switch_allowed)
         self.board = board
+        self.board_size = self.board.shape[0]
         self.gui = Gui(self.board, self.config.getint("INTERACTIVE", 'gui_radius', fallback=50),
                        self.config.getboolean("INTERACTIVE", 'dark_mode', fallback=False))
         
-        # self.game = MultiHexGame(
-        #     boards=(self.board,),
-        #     models=(self.model,),
-        #     noise=None,
-        #     noise_parameters=None,
-        #     temperature=self.config.getfloat("INTERACTIVE", 'temperature', fallback=0.1),
-        #     temperature_decay=self.config.getfloat("INTERACTIVE", 'temperature_decay', fallback=1.)
-        # )
-
     def play_move(self):
         move = self.get_move()
         print(move)
@@ -44,18 +37,8 @@ class InteractiveGame:
             self.play_ai_move()
         elif move == 'undo_move':
             self.undo_move()
-        # elif move == 'restart':
-        #     self.board.override(Board(self.board.size, self.board.switch_allowed))
-        # else:
-        #     self.board.set_stone(move)
-        #     if self.board.winner:
-        #         self.gui.set_winner("Player has won")
-        #     elif not self.gui.editor_mode:
-        #         self.play_ai_move()
-        # self.gui.update_board(self.board)
-        # print(move)
         return move
-
+    
     def undo_move(self):
         self.board.undo_move_board()
         # forgot know what the ratings were better not show anything
@@ -79,7 +62,7 @@ class InteractiveGame:
 
     def get_move(self):
         # actions = np.arange(self.board.shape[0] * self.board.shape[1])
-        valid_actions = np.where(self.board == 2)
+        valid_actions = np.where(self.board == 0)
         print(self.board)
         valid_actions = list(zip(valid_actions[0], valid_actions[1]))
         # print(valid_actions)
@@ -88,10 +71,19 @@ class InteractiveGame:
             if move in ['ai_move', 'undo_move', 'redraw', 'show_ratings', 'restart']:
                 return move
             move = tuple(map(sum, zip(move, (-1,-1))))
-            print((move in valid_actions))
             if move in valid_actions:
                 return move
+    
+    def choose_action(self, board, action_mask = None):
+        self.board = board
+        action = self.play_move()
+        action = self.coordinate_to_action(action)
 
+        # self.winner = self.simulator.fast_move(action)
+        return action
+
+    def coordinate_to_action(self, coords):
+        return np.ravel_multi_index(coords, (self.board_size, self.board_size))
 
 def play_game(interactive):
     while True:

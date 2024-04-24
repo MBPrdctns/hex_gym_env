@@ -18,9 +18,15 @@ BURGUNDY = (137, 0, 55)
 ROYAL_BLUE = (10, 10, 200)
 
 class player(IntEnum):
-    BLACK = 0
+    BLACK = -1
     WHITE = 1
-    EMPTY = 2
+    EMPTY = 0
+
+# player = {
+#     "BLACK": {"id": 0, "board_encoding": -1},
+#     "WHITE": {"id": 1, "board_encoding": 1},
+#     "EMPTY": {"id": 2, "board_encoding": 0}
+# }
 
 def _get_colors(dark_mode: bool):
     return {

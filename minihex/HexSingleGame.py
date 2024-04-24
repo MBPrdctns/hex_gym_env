@@ -13,7 +13,7 @@ from configparser import ConfigParser
 #     EMPTY = 0
 
 player = {
-    "BLACK": {"id": 0, "board_encoding": -1},
+    "BLACK": {"id": 0, "board_encoding": -1}, # ROT
     "WHITE": {"id": 1, "board_encoding": 1},
     "EMPTY": {"id": 2, "board_encoding": 0}
 }
@@ -95,10 +95,15 @@ class HexGame(object):
             return 3
         
         y, x = self.action_to_coordinate(action)
-        self.board[y, x] = self.current_player_num 
+        # self.board[y, x] = self.current_player_num 
+        self.board[y, x] = player["BLACK"]["board_encoding"]# if self.current_player_num == 0 else player["WHITE"]["board_encoding"]
         self.empty_fields -= 1
 
-        self.flood_fill((y, x))
+        if self.current_player_num == player["WHITE"]["id"]:
+            self.flood_fill((x, y)) # switch
+        else:
+            self.flood_fill((y, x))
+
 
         winner = None
         regions = self.regions[self.current_player_num]
@@ -110,7 +115,7 @@ class HexGame(object):
         elif self.empty_fields <= 0:
             self.done = True
             winner = None
-
+        # print(self.board)
         self.current_player_num = (self.current_player_num + 1) % 2
         return winner
 
@@ -208,15 +213,15 @@ class HexEnv(gym.Env):
                                      connected_stones=regions,
                                      debug=self.debug)
 
-        self.current_player_num = 0
+        self.current_player_num = player["BLACK"]["id"]
 
         return self.simulator.board
 
     def step(self, action):
-        if self.current_player_num != player["BLACK"]["id"]:
-            self.invert_board()
-            y, x = self.simulator.action_to_coordinate(action)
-            action = self.simulator.coordinate_to_action((x, y))
+        # if self.current_player_num != player["BLACK"]["id"]:
+        #     self.invert_board()
+        #     y, x = self.simulator.action_to_coordinate(action)
+        #     action = self.simulator.coordinate_to_action((x, y))
             
         self.winner = self.simulator.make_move(action)
         if self.winner == 3: # invalid move
@@ -234,8 +239,11 @@ class HexEnv(gym.Env):
         reward = [-r,-r]
         reward[self.current_player_num] = r
 
-        if self.current_player_num != player["BLACK"]["id"]:
-            self.invert_board()
+        # if self.current_player_num != player["BLACK"]["id"]:
+        #     self.invert_board()
+
+        self.current_player_num = (self.current_player_num + 1 )% 2 
+        self.invert_board()
 
         return (self.simulator.board, reward,
                 self.simulator.done, {})

@@ -7,6 +7,12 @@ from minihex.__init__ import random_policy
 from minihex.interactive.interactive import InteractiveGame
 from configparser import ConfigParser
 
+player = {
+    "BLACK": {"id": 0, "board_encoding": -1}, # ROT
+    "WHITE": {"id": 1, "board_encoding": 1},
+    "EMPTY": {"id": 2, "board_encoding": 0}
+}
+
 class BaseRandomPolicy(object):
     def choose_action(self, board, action_mask = None):
         actions = np.arange(board.shape[0] * board.shape[1])
@@ -27,25 +33,31 @@ class OpponentPolicy(object):
     
     def save_model(self, path):
         self.opponent_model.save(path)
-    
+
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20)):
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False):
             super(SelfPlayEnv, self).__init__()
 
-            if type(base_model) != BaseRandomPolicy:
-                self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(20)])
-                self.opponent_scores = scores
-                base_model = OpponentPolicy(base_model)
+            if play_gui:
+                self.opponent_models = [InteractiveGame(self.initial_board)]
+                self.opponent_scores = [1]
+                base_model = InteractiveGame(self.initial_board)
             else:
-                self.opponent_models = np.array([BaseRandomPolicy() for _ in range(20)])
-                self.opponent_scores = np.zeros(20) #np.array(range(20)) 
+                if type(base_model) != BaseRandomPolicy:
+                    self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(20)])
+                    self.opponent_scores = scores
+                    base_model = OpponentPolicy(base_model)
+                else:
+                    self.opponent_models = np.array([BaseRandomPolicy() for _ in range(20)])
+                    self.opponent_scores = np.zeros(20) #np.array(range(20))
+
             self.best_model = base_model
             self.best_score = np.max(self.opponent_scores)
             self.best_mean_reward = -np.inf
             self.eval_state = False
             self.eval_episode = 0
-
+            self.play_gui = play_gui
 
         def reset(self, seed=None, options=None):
             super(SelfPlayEnv, self).reset()
@@ -54,6 +66,7 @@ def selfplay_wrapper(env):
 
             if self.current_player_num != self.agent_player_num:   
                 self.continue_game()
+                # self.invert_board() # if genau dann, wenn gegner (buffer) schwarz ist -> model braucht inverted board.
 
             info = {
                 'state': self.simulator.board,
@@ -125,15 +138,33 @@ def selfplay_wrapper(env):
             reward = None
             done = None
 
-            # self.render()
+            if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
+                self.invert_board()
+
             action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
+
+            if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
+                self.invert_board()
+                x,y = self.simulator.action_to_coordinate(action)
+                action = self.simulator.coordinate_to_action((y,x))
+
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
 
             return observation, reward, done, None
 
         def step(self, action):
             # self.render()
+            print(self.current_player_num)
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
+
+            print(self.current_player_num)
+            if self.play_gui:
+                if self.current_player_num == player["WHITE"]["id"]: # already added +1 to current_player_num in step
+                    self.invert_board()
+                self.opponent_model.gui.update_board(self.simulator.board)
+
+                if self.current_player_num == player["WHITE"]["id"]:
+                    self.invert_board()
 
             if not done:
                 package = self.continue_game()

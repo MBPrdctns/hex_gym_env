@@ -360,7 +360,7 @@ class HexEnv(gym.Env):
 
     def interactive_play(self, board):
         self.interactive.board = board
-        self.interactive.gui.update_board(board)
+        # self.interactive.gui.update_board(board)
         action = self.interactive.play_move()
         print(action)
         action = self.simulator.coordinate_to_action(action)
