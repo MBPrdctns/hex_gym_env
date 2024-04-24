@@ -30,10 +30,15 @@ def selfplay_wrapper(env):
 
             if type(base_model) != BaseRandomPolicy:
                 base_model = OpponentPolicy(base_model)
-
-            self.opponent_models = [base_model]
+    
+            self.opponent_models = np.array([base_model for _ in range(20)])
+            self.opponent_scores = np.array(range(20)) #np.zeros(20)
             self.best_model = base_model
+            self.best_score = 0
             self.best_mean_reward = -np.inf
+            self.eval_state = False
+            self.eval_episode = 0
+
 
         def reset(self, seed=None, options=None):
             super(SelfPlayEnv, self).reset()
@@ -52,7 +57,14 @@ def selfplay_wrapper(env):
             return self.simulator.board, info
     
         def setup_opponents(self):
-            rv = random.uniform(0,1)
+            if self.eval_state:
+                if self.eval_episode > 19:
+                    print("EVAL EPISODE EXCEEDED: ", self.eval_episode)
+                else:
+                    self.opponent_model = self.opponent_models[self.eval_episode]
+                    self.eval_episode += 1
+                return None
+            rv = 1 #random.uniform(0,1)
             if rv < 0.8:
                 # i = int(random.random() * len(self.best_model))
                 # self.opponent_model = self.best_model[i]
@@ -72,6 +84,24 @@ def selfplay_wrapper(env):
         def get_best_mean_reward(self):
             return self.best_mean_reward
 
+        def set_eval(self, eval_state):
+            self.eval_episode = 0
+            self.eval_state = eval_state
+            assert(len(self.opponent_models)==len(self.opponent_scores))
+
+        def get_scores(self):
+            return self.opponent_scores
+        
+        def set_opponent_model(self, index, model, score):
+            self.opponent_models[index] = OpponentPolicy(model)
+            self.opponent_scores += 1
+            self.opponent_scores[index] = score
+            #if score > self.best_score:
+            #    self.best_model = model
+        
+        def get_opponent_models(self):
+            return self.opponent_models
+        
         def continue_game(self):
             observation = None 
             reward = None
