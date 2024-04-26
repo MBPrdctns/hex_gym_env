@@ -91,6 +91,7 @@ class HexGame(object):
         #     self.done = True
         #     self.winner = (self.current_player_num  + 1) % 2
         #     return (self.current_player_num  + 1) % 2
+        # print("current player fast move:", self.current_player_num)
         if not self.is_valid_move(action):
             return 3
         
@@ -98,7 +99,7 @@ class HexGame(object):
         # self.board[y, x] = self.current_player_num 
         self.board[y, x] = player["BLACK"]["board_encoding"]# if self.current_player_num == 0 else player["WHITE"]["board_encoding"]
         self.empty_fields -= 1
-
+        # print(self.board)
         if self.current_player_num == player["WHITE"]["id"]:
             self.flood_fill((x, y)) # switch
         else:
@@ -112,6 +113,7 @@ class HexGame(object):
             winner = self.current_player_num
             # winner = player(self.current_player_num)
             self.winner = winner
+            # print(winner)
         elif self.empty_fields <= 0:
             self.done = True
             winner = None
@@ -179,7 +181,7 @@ class HexEnv(gym.Env):
         self.debug = debug
         self.show_board = show_board        
         self.board_size = board_size
-        self.observation_space = spaces.Box(low=0, high=2, shape=(board_size, board_size), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(board_size, board_size), dtype=int)
         self.action_space = spaces.Discrete(board_size**2)
         # cache initial connection matrix (approx +100 games/s)
         self.initial_regions = regions
@@ -200,6 +202,8 @@ class HexEnv(gym.Env):
         return np.array([self.simulator.is_valid_move(action) for action in range(self.board_size**2)])
 
     def reset(self, seed=None, options=None):
+        self.current_player_num = player["BLACK"]["id"]
+
         if self.initial_regions is None:
             self.simulator = HexGame(self.current_player_num,
                                      self.initial_board.copy(),
@@ -213,7 +217,6 @@ class HexEnv(gym.Env):
                                      connected_stones=regions,
                                      debug=self.debug)
 
-        self.current_player_num = player["BLACK"]["id"]
 
         return self.simulator.board
 
@@ -230,14 +233,15 @@ class HexEnv(gym.Env):
 
 
         if self.winner == self.current_player_num:
-            r = 1
+            r = 1 #self.simulator.empty_fields
         elif self.winner == (self.current_player_num + 1) % 2:
-            r = -1
+            r = -1 #0
         else:
             r = 0
 
         reward = [-r,-r]
         reward[self.current_player_num] = r
+        # reward[(self.current_player_num + 1) % 2] = - 25 + r
 
         # if self.current_player_num != player["BLACK"]["id"]:
         #     self.invert_board()

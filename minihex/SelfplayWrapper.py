@@ -28,7 +28,7 @@ class OpponentPolicy(object):
         self.opponent_model = model
 
     def choose_action(self, board, action_mask = None):
-        action, _ = self.opponent_model.predict(board, deterministic=True, action_masks=action_mask)
+        action, _ = self.opponent_model.predict(board, deterministic=False, action_masks=action_mask)
         return action
     
     def save_model(self, path):
@@ -36,8 +36,8 @@ class OpponentPolicy(object):
 
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False):
-            super(SelfPlayEnv, self).__init__()
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20):
+            super(SelfPlayEnv, self).__init__(board_size=board_size)
 
             if play_gui:
                 self.opponent_models = [InteractiveGame(self.initial_board)]
@@ -45,12 +45,12 @@ def selfplay_wrapper(env):
                 base_model = InteractiveGame(self.initial_board)
             else:
                 if type(base_model) != BaseRandomPolicy:
-                    self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(20)])
+                    self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(buffer_size)])
                     self.opponent_scores = scores
                     base_model = OpponentPolicy(base_model)
                 else:
-                    self.opponent_models = np.array([BaseRandomPolicy() for _ in range(20)])
-                    self.opponent_scores = np.zeros(20) #np.array(range(20))
+                    self.opponent_models = np.array([BaseRandomPolicy() for _ in range(buffer_size)])
+                    self.opponent_scores = np.zeros(buffer_size) #np.array(range(20))
 
             self.best_model = base_model
             self.best_score = np.max(self.opponent_scores)
@@ -130,7 +130,7 @@ def selfplay_wrapper(env):
             return self.opponent_models
         
         def save_best_model(self):
-            model_name = "best_model_" + str(self.best_score)
+            model_name = "models/best_model_" + str(self.best_score)
             self.best_model.save_model(model_name)
 
         def continue_game(self):
@@ -154,10 +154,8 @@ def selfplay_wrapper(env):
 
         def step(self, action):
             # self.render()
-            print(self.current_player_num)
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
 
-            print(self.current_player_num)
             if self.play_gui:
                 if self.current_player_num == player["WHITE"]["id"]: # already added +1 to current_player_num in step
                     self.invert_board()
@@ -172,6 +170,8 @@ def selfplay_wrapper(env):
                     observation, reward, done, _ = package
 
             agent_reward = reward[self.agent_player_num]
+            # print("agent_reward: ", agent_reward)
+            # print(self.agent_player_num)
 
             # if done:
                 # self.render()
