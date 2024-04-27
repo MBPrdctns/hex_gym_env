@@ -1,28 +1,30 @@
 import minihex
 import gymnasium as gym
 from stable_baselines3 import DQN, PPO
-from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
+from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy, MaskableActorCriticCnnPolicy
 from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.ppo_mask import MaskablePPO
 import numpy as np
+from minihex.HexGame import player as hex_player
 
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
 env = gym.make("hex-v0",
                opponent_policy=minihex.random_policy,
+               player_color=hex_player.BLACK,
                board_size=11)
 env = ActionMasker(env, mask_fn)
 
 
 
-# model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) # MaskablePPO("MlpPolicy", env, verbose=1)
-# model.learn(total_timesteps=400000, log_interval=4)
-# model.save("hex")
+model = MaskablePPO(MaskableActorCriticCnnPolicy, env, verbose=1, tensorboard_log="./tensorboard_logs/") # MaskablePPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=400000, log_interval=4)
+model.save("hex_test")
 
 # del model # remove to demonstrate saving and loading
 
-model = MaskablePPO.load("hex")
+model = MaskablePPO.load("hex_selfplay")
 
 obs, info = env.reset()
 

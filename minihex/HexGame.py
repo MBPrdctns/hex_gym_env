@@ -2,7 +2,8 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from enum import IntEnum
-
+import random
+from minihex.__init__ import random_policy 
 from minihex.interactive.interactive import InteractiveGame
 from configparser import ConfigParser
 
@@ -17,7 +18,7 @@ class HexGame(object):
     Hex Game Environment.
     """
 
-    def __init__(self, active_player, board,
+    def __init__(self, current_player_num, board,
                  focus_player, connected_stones=None, debug=False):
         self.board = board
         # track number of empty feelds for speed
@@ -53,13 +54,13 @@ class HexGame(object):
             for y, row in enumerate(board):
                 for x, value in enumerate(row):
                     if value == player.BLACK:
-                        self.active_player = player.BLACK
+                        self.current_player_num = player.BLACK
                         self.flood_fill((y, x))
                     elif value == player.WHITE:
-                        self.active_player = player.WHITE
+                        self.current_player_num = player.WHITE
                         self.flood_fill((y, x))
 
-        self.active_player = active_player
+        self.current_player_num = current_player_num
         self.player = focus_player
         self.done = False
         self.winner = None
@@ -85,28 +86,28 @@ class HexGame(object):
         # # currently resigning is not a possible option
         # if action == self.special_moves.RESIGN:
         #     self.done = True
-        #     self.winner = (self.active_player + 1) % 2
-        #     return (self.active_player + 1) % 2
+        #     self.winner = (self.current_player_num + 1) % 2
+        #     return (self.current_player_num + 1) % 2
         if not self.is_valid_move(action):
             return 3
         
         y, x = self.action_to_coordinate(action)
-        self.board[y, x] = self.active_player
-        self.empty_fields -= 1
+        self.board[y, x] = self.current_player_num
+        self.empty_fields -= x
 
         self.flood_fill((y, x))
 
         winner = None
-        regions = self.regions[self.active_player]
+        regions = self.regions[self.current_player_num]
         if regions[-1, -1] == 1:
             self.done = True
-            winner = player(self.active_player)
+            winner = player(self.current_player_num)
             self.winner = winner
-        elif self.empty_fields <= 0:
-            self.done = True
-            winner = None
+        # elif self.empty_fields <= 0:
+        #     self.done = True
+        #     winner = None
 
-        self.active_player = (self.active_player + 1) % 2
+        self.current_player_num = (self.current_player_num + 1) % 2
         return winner
 
     def coordinate_to_action(self, coords):
@@ -121,7 +122,7 @@ class HexGame(object):
         return self.actions[self.board.flatten() == player.EMPTY]
 
     def flood_fill(self, position):
-        regions = self.regions[self.active_player]
+        regions = self.regions[self.current_player_num]
         y, x = (position[0] + 1, position[1] + 1)
         neighborhood = regions[(y - 1):(y + 2), (x - 1):(x + 2)].copy()
         neighborhood[0, 0] = 0
@@ -132,8 +133,8 @@ class HexGame(object):
         adjacent_regions.pop(0)
 
         if len(adjacent_regions) == 0:
-            regions[y, x] = self.region_counter[self.active_player]
-            self.region_counter[self.active_player] += 1
+            regions[y, x] = self.region_counter[self.current_player_num]
+            self.region_counter[self.current_player_num] += 1
         else:
             new_region_label = adjacent_regions.pop(0)
             regions[y, x] = new_region_label
@@ -149,24 +150,35 @@ class HexEnv(gym.Env):
     metadata = {"render.modes": ["ansi"]}
 
     def __init__(self, opponent_policy,
+                 opponent_model=None,
                  player_color=player.BLACK,
-                 active_player=player.BLACK,
+                 current_player_num=player.BLACK,
                  board=None,
                  regions=None,
                  board_size=5,
                  debug=False,
-                 show_board=False):
+                 show_board=False,
+                 eps=0.5):
         
         if opponent_policy == "interactive":
             self.opponent_policy = self.interactive_play
+            self.interactive = True
+        elif opponent_policy == "opponent_predict":
+            self.opponent_policy = self.opponent_predict
+            self.interactive=False
         else:
             self.opponent_policy = opponent_policy
+            self.interactive = False
         
         if board is None:
             board = player.EMPTY * np.ones((board_size, board_size))
+        
+        self.n_players = 2 # SIMPLE setup
 
+        self.eps = eps
+        self.opponent_model = opponent_model
         self.initial_board = board
-        self.active_player = active_player
+        self.current_player_num = current_player_num
         self.player = player_color
         self.simulator = None
         self.winner = None
@@ -193,7 +205,7 @@ class HexEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         if self.initial_regions is None:
-            self.simulator = HexGame(self.active_player,
+            self.simulator = HexGame(self.current_player_num,
                                      self.initial_board.copy(),
                                      self.player,
                                      debug=self.debug)
@@ -201,7 +213,7 @@ class HexEnv(gym.Env):
             self.initial_regions = regions
         else:
             regions = self.initial_regions.copy()
-            self.simulator = HexGame(self.active_player,
+            self.simulator = HexGame(self.current_player_num,
                                      self.initial_board.copy(),
                                      self.player,
                                      connected_stones=regions,
@@ -209,7 +221,7 @@ class HexEnv(gym.Env):
 
         self.previous_opponent_move = None
 
-        if self.player != self.active_player:
+        if self.player != self.current_player_num:
             info_opponent = {
                 'state': self.simulator.board,
                 'last_move_opponent': None,
@@ -222,17 +234,25 @@ class HexEnv(gym.Env):
             'last_move_opponent': self.previous_opponent_move,
             'last_move_player': None
         }
-        # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
-        # state = np.stack([self.simulator.board, active_player_array], axis=0)
+        # current_player_num_array = np.full((self.board_size, self.board_size), self.current_player_num)
+        # state = np.stack([self.simulator.board, current_player_num_array], axis=0)
         # print(state)
         # print(self.observation_space)
+
         return self.simulator.board, info
 
     def step(self, action):
+        if self.player != player.BLACK:
+            self.invert_board()
+            y, x = self.simulator.action_to_coordinate(action)
+            action = self.simulator.coordinate_to_action((x, y))
+            
         if not self.simulator.done:
             self.winner = self.simulator.make_move(action)
             if self.winner == 3: # invalid move
                 self.simulator.done = True
+
+        
 
         opponent_action = None
 
@@ -246,8 +266,13 @@ class HexEnv(gym.Env):
 
         if self.winner == self.player:
             reward = 1
+            # reward = (self.simulator.board_size ** 2 - 1) - (self.simulator.board == self.player).sum()
+            # reward = (self.simulator.board == self.player).sum()
+            # print(reward)
         elif self.winner == self.opponent:
+            # reward = - 12 # (self.simulator.board == self.player).sum()
             reward = -1
+            # print(reward)
         elif self.winner == 3: # invalid move
             reward = -100
         else:
@@ -260,11 +285,22 @@ class HexEnv(gym.Env):
             'winner': self.winner
         }
 
-        # active_player_array = np.full((self.board_size, self.board_size), self.active_player)
-        # state = np.stack([self.simulator.board, active_player_array], axis=0)
+        # current_player_num_array = np.full((self.board_size, self.board_size), self.current_player_num)
+        # state = np.stack([self.simulator.board, current_player_num_array], axis=0)
+
+        if self.player != player.BLACK:
+            self.invert_board()
 
         return (self.simulator.board, reward,
                 self.simulator.done, False, info)
+    
+    def invert_board(self):
+        board = self.simulator.board.copy()
+        inverted_board = board.T
+        inverted_board[inverted_board==player.BLACK] = -1 # placeholder
+        inverted_board[inverted_board==player.WHITE] = player.BLACK
+        inverted_board[inverted_board == -1] = player.WHITE
+        self.simulator.board = inverted_board
 
     def render(self, mode='ansi', close=False):
         
@@ -294,18 +330,42 @@ class HexEnv(gym.Env):
             print("")
 
     def opponent_move(self, info):
-        opponent_action = self.opponent_policy(self.simulator.board,
-                                               self.opponent,
-                                               info)
+        if (self.player == player.BLACK and not self.interactive): # if opponent plays black, invert board - model gets state always playing black
+            self.invert_board()
+            # print(self.simulator.board)
+        opponent_action = self.opponent_policy(self.simulator.board)
+        # print(opponent_action)
+        if self.player == player.BLACK and not self.interactive:
+            self.invert_board()
+            # print(self.simulator.board)
+            y, x = self.simulator.action_to_coordinate(opponent_action)
+            opponent_action = self.simulator.coordinate_to_action((x, y))
+            # print(opponent_action)
+
+        # 1
         self.winner = self.simulator.make_move(opponent_action)
         self.previous_opponent_move = opponent_action
+            
         return opponent_action
+    
+    def set_opponent_model(self, model):
+        self.opponent_model = model
+    
+    def opponent_predict(self, state):
+        rv = random.uniform(0,1)
+        if rv < self.eps:
+            return random_policy(state)
+        action, _ = self.opponent_model.predict(state, deterministic=True, action_masks=self.get_action_mask())
+        return action
 
-    def interactive_play(self, board, player,info):
+    def interactive_play(self, board):
         self.interactive.board = board
-        self.interactive.gui.update_board(board)
+        # self.interactive.gui.update_board(board)
         action = self.interactive.play_move()
         print(action)
         action = self.simulator.coordinate_to_action(action)
         # self.winner = self.simulator.fast_move(action)
         return action
+    
+    def legal_actions(self):
+        return (self.interactive.board == 2)
