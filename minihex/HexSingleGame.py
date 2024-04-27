@@ -168,11 +168,15 @@ class HexEnv(gym.Env):
                  board_size=5,
                  debug=False,
                  show_board=False,
-                 eps=0.5):
+                 eps=0.5,
+                 sample_board = False):
         
-        if board is None:
+        if board is None and sample_board == False:
             board = player["EMPTY"]["board_encoding"] * np.ones((board_size, board_size))
+        elif sample_board:
+            board = self.random_board(player["EMPTY"]["board_encoding"] * np.ones((board_size, board_size)))
 
+        self.sample_board = sample_board
         self.eps = eps
         self.initial_board = board
         self.current_player_num = current_player_num
@@ -204,9 +208,15 @@ class HexEnv(gym.Env):
     def reset(self, seed=None, options=None):
         self.current_player_num = player["BLACK"]["id"]
 
-        if self.initial_regions is None:
+        if self.initial_regions is None and self.sample_board == False:
             self.simulator = HexGame(self.current_player_num,
                                      self.initial_board.copy(),
+                                     debug=self.debug)
+            regions = self.simulator.regions.copy()
+            self.initial_regions = regions
+        elif self.sample_board:
+            self.simulator = HexGame(self.current_player_num,
+                                     self.random_board(player["EMPTY"]["board_encoding"] * np.ones((self.board_size, self.board_size))),
                                      debug=self.debug)
             regions = self.simulator.regions.copy()
             self.initial_regions = regions
@@ -286,3 +296,36 @@ class HexEnv(gym.Env):
             print(" " * (i * 3 + 1), end="")
             print("-" * (board.shape[1] * 7 - 1), end="")
             print("")
+
+    def random_board(self,matrix):
+
+        n = matrix.shape[0]
+        m = np.random.randint(n//4, n-1)
+        l = np.random.randint(n//4, n-1)
+
+        # Randomly select the starting coordinates of the submatrix
+        start_row = np.random.randint(0, n - m + 1)
+        start_col = np.random.randint(0, n - l + 1)
+
+        # Calculate the total number of elements in the submatrix
+        total_elements = m * l
+        total_nonzero = int((m * l * (0.5 + 0.5 * np.random.random()))//2) * 2
+
+        # Calculate the number of -1s and 1s to be placed in the submatrix
+        num_minus_ones = total_nonzero // 2
+        num_ones = total_nonzero - num_minus_ones
+        num_zeros = total_elements - total_nonzero
+
+        # Generate an array with equal numbers of -1s and 1s and shuffle it
+        submatrix_values = np.array([player["BLACK"]["board_encoding"]] * num_minus_ones + 
+                                    [player["WHITE"]["board_encoding"]] * num_ones + 
+                                    [player["EMPTY"]["board_encoding"]] * num_zeros)
+        
+        np.random.shuffle(submatrix_values)
+
+        # Reshape the shuffled values to match the submatrix dimensions
+        shuffled_submatrix = submatrix_values.reshape((m, l))
+        
+        # Replace the submatrix with the shuffled values
+        matrix[start_row:start_row + m, start_col:start_col + l] = shuffled_submatrix
+        return matrix
