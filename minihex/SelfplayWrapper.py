@@ -36,8 +36,8 @@ class OpponentPolicy(object):
 
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20):
-            super(SelfPlayEnv, self).__init__(board_size=board_size)
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20, sample_board=False):
+            super(SelfPlayEnv, self).__init__(board_size=board_size, sample_board = sample_board)
 
             if play_gui:
                 self.opponent_models = [InteractiveGame(self.initial_board)]

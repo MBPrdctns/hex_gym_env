@@ -34,10 +34,14 @@ from minihex.CustomNetwork import CustomPolicy
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.legal_actions()
 
-#model = MaskablePPO.load("hex_selfplay_new_11x11_10M")
+# model = MaskablePPO.load("hex_selfplay_new_11x11_10M")
 
-env = selfplay_wrapper(HexEnv)(board_size=11,
-                                buffer_size=20)
+env = selfplay_wrapper(HexEnv)(board_size=7,
+                                buffer_size=20,
+                            #   base_model=model,
+                              scores=np.zeros(20),
+                              sample_board = True)
+
 env = ActionMasker(env, mask_fn)
 #model.set_env(env)
 
