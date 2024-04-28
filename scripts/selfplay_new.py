@@ -34,28 +34,26 @@ from minihex.CustomNetwork import CustomPolicy
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.legal_actions()
 
-model = MaskablePPO.load("hex_selfplay_new_11x11_10M")
+#model = MaskablePPO.load("hex_selfplay_new_11x11_10M")
 
 env = selfplay_wrapper(HexEnv)(board_size=11,
-                                buffer_size=100,
-                              base_model=model,
-                              scores=np.zeros(100))
+                                buffer_size=20)
 env = ActionMasker(env, mask_fn)
-model.set_env(env)
+#model.set_env(env)
 
 # model = MaskablePPO(MaskableActorCriticPolicy, env, verbose=1) 
 
 # model.set_env(env)
-policy_kwargs = None
-# policy_kwargs = dict(
-#     features_extractor_class=CustomPolicy,
-#     features_extractor_kwargs=dict(features_dim=128),
-# )
-# model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log= "log/", policy_kwargs=policy_kwargs) 
+#policy_kwargs = None
+policy_kwargs = dict(
+    features_extractor_class=CustomPolicy,
+    features_extractor_kwargs=dict(features_dim=256),
+)
+model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log= "log/", policy_kwargs=policy_kwargs) 
 
 callback = SelfPlayCallback(eval_env=env, 
                             gym_env=env, 
                             eval_freq=10000, 
-                            n_eval_episodes=100) #  eval_freq defaul 10000
-model.learn(1e8, callback=[callback])
-model.save("hex_selfplay_new_11x11")
+                            n_eval_episodes=20) #  eval_freq defaul 10000
+model.learn(1e9, callback=[callback])
+model.save("hex_selfplay__cnn_11x11_1e9")

@@ -130,7 +130,7 @@ def selfplay_wrapper(env):
             return self.opponent_models
         
         def save_best_model(self):
-            model_name = "models/best_model_" + str(self.best_score)
+            model_name = "models/best_model_cnn_" + str(self.best_score)
             self.best_model.save_model(model_name)
 
         def continue_game(self):

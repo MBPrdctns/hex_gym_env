@@ -55,5 +55,5 @@ class SelfPlayCallback(MaskableEvalCallback):
                     #    self.gym_env.append_opponent_model(self.model)
         if self.n_calls % 100000 == 0:
             self.gym_env.save_best_model()
-            self.model.save("hex_selfplay_model")
+            self.model.save("hex_selfplay_cnn_model")
         return True
