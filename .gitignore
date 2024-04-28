@@ -4,3 +4,7 @@
 **/dist
 **/build
 .venv/*
+*.sh
+events*
+*.out
+best_model_*
