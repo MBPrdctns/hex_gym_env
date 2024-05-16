@@ -14,7 +14,7 @@ from minihex.SelfplayWrapper import selfplay_wrapper
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
-env = selfplay_wrapper(HexEnv)(play_gui=True, board_size=11, scores=np.zeros(20))
+env = selfplay_wrapper(HexEnv)(play_gui=True, board_size=5, scores=np.zeros(20))
 env = ActionMasker(env, mask_fn)
 # model.set_env(env)
 
@@ -27,7 +27,7 @@ env = ActionMasker(env, mask_fn)
 # )
 # model = MaskablePPO("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs, tensorboard_log= "log/") 
 # model = MaskablePPO.load("models/best_model_0.45989754831831703")
-model = MaskablePPO.load("hex_selfplay_model")
+model = MaskablePPO.load("random_lr_0.001_timesteps_100000")
 
 state, info = env.reset()
 terminated = False
