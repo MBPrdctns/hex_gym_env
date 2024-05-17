@@ -28,10 +28,9 @@ class CustomPolicy(BaseFeaturesExtractor):
 class ResNetExtractor(nn.Module):
     def __init__(self):
         super(ResNetExtractor, self).__init__()
-        self.conv1 = convolutional(1, 32, 3) 
-        self.residual1 = residual(32, 32, 3)
-        self.residual2 = residual(32, 32, 3)
-        self.residual3 = residual(32, 32, 3)
+        self.conv1 = convolutional(1, 64, 3) 
+        self.residual1 = residual(64, 64, 3)
+        self.residual2 = residual(64, 64, 3)
         self.flatten = nn.Flatten()
 
     def forward(self, x):
@@ -39,7 +38,6 @@ class ResNetExtractor(nn.Module):
         x = self.conv1(x)
         x = self.residual1(x)
         x = self.residual2(x)
-        x = self.residual3(x)
         x = self.flatten(x)
         return x
 

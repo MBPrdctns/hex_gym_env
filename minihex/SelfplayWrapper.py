@@ -77,13 +77,11 @@ def selfplay_wrapper(env):
             return self.simulator.board, info
     
         def setup_opponents(self):
-            # if self.eval_state:
-            #     if self.eval_episode > 19:
-            #         print("EVAL EPISODE EXCEEDED: ", self.eval_episode)
-            #     else:
-            #         self.opponent_model = self.opponent_models[self.eval_episode]
-            #         self.eval_episode += 1
-            #     return None
+            if self.eval_state:
+                if self.eval_episode <= 29:
+                    self.opponent_model = self.opponent_models[self.eval_episode]
+                    self.eval_episode += 1
+                return None
             rv = random.uniform(0,1)
             if rv < 0.8:
                 # i = int(random.random() * len(self.best_model))
@@ -141,7 +139,11 @@ def selfplay_wrapper(env):
             if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
                 self.invert_board()
 
-            action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
+            rv = random.uniform(0,1)
+            if rv > 0.05:
+                action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
+            else:
+                action = BaseRandomPolicy().choose_action(self.simulator.board)
 
             if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
                 self.invert_board()
