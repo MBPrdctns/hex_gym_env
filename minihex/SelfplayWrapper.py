@@ -63,6 +63,8 @@ def selfplay_wrapper(env):
             super(SelfPlayEnv, self).reset()
             self.agent_player_num = random.randint(0,1)
             self.setup_opponents()
+            if self.play_gui:
+                self.best_model.gui.update_board(self.simulator.board)
 
             if self.current_player_num != self.agent_player_num:   
                 self.continue_game()

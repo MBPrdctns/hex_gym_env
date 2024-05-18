@@ -309,7 +309,7 @@ class HexEnv(gym.Env):
 
         # Calculate the total number of elements in the submatrix
         total_elements = m * l
-        total_nonzero = int((m * l * (0.5 + 0.5 * np.random.random()))//2) * 2
+        total_nonzero = int((m * l * (0.5 + 0.5 * np.random.random()))//2) * 2 # //2 * 2 to always get even numbers => initialize board for black
 
         # Calculate the number of -1s and 1s to be placed in the submatrix
         num_minus_ones = total_nonzero // 2
