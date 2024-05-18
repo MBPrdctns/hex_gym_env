@@ -88,8 +88,9 @@ class Gui:
         y = pos[1]
         return [2*self.r + x * self.r / 2 + y * self.r, 2*self.r + math.sqrt(3) / 2 * x * self.r]
 
-    def update_field_text(self, field_text):
+    def update_field_text(self, field_text, board):
         self.last_field_text = field_text
+        self.update_board(board)
 
     def update_board(self, board):
         # prepare board
@@ -103,36 +104,36 @@ class Gui:
         # Clear the screen and set the screen background
         self.screen.fill(self.colors['BACKGROUND'])
 
-        text = f"""    a: trigger ai move
-{'✓' if self.editor_mode else '   '} e: human vs human mode
-{'✓' if self.show_field_text else '   '} s: toggle ai ratings
-    z: undo last move
-{'✓' if self.colors["DARK_MODE"] else '   '} d: toggle dark mode
-    r: restart game"""
+        text = f"""
+{'✓' if self.show_field_text else '   '} s: toggle ai ratings"""
         blit_text(self.screen, text, (self.size[0] - 200, 10), self.font, self.colors['LINES'])
 
         for x in range(board.shape[0]):
             for y in range(board.shape[0]):
-                if x in [0, board.shape[0]] and y in [0, board.shape[0]]: # corners
+                if x in [0, board.shape[0]-1] and y in [0, board.shape[0]-1]: # corners
                     continue  # don't draw borders as they don't belong to a single player
                 center = self.get_center([x, y])
                 angles = [math.pi / 6 + x * math.pi / 3 for x in range(6)]
                 points = [[center[0] + math.cos(angle) * self.r / math.sqrt(3),
                            center[1] + math.sin(angle) * self.r / math.sqrt(3)]
                           for angle in angles]
-                # breakpoint()
-                # print(x,y)
+
                 if board[x, y] == player.BLACK:
                     pygame.draw.polygon(self.screen, self.colors['PLAYER_1'], points, 0)
                 elif board[x, y] == player.WHITE:
                     pygame.draw.polygon(self.screen, self.colors['PLAYER_2'], points, 0)
+                
                 pygame.draw.polygon(self.screen, self.colors['LINES'], points, 3)
+                
+                if board[x,y] != player.EMPTY:
+                    continue
 
                 if self.last_field_text is not None and self.show_field_text:
-                    field_text_pos = board.player * (x * board.size + y) + \
-                                     (1 - board.player) * (y * board.size + x)
-                    if x in range(board.size) and y in range(board.size):
-                        text = self.last_field_text[field_text_pos]
+                    field_text_pos = ((x-1) * self.board.shape[0] + (y-1)) #+ \
+                                     #(1 - board.player) * (y * board.size + x)
+                    if (x-1) in range(self.board.shape[0]) and (y-1) in range(self.board.shape[0]):
+                        text = f"{self.last_field_text[field_text_pos]:.2f}"
+                        # text = "{:.1f}".format(self.last_field_text[field_text_pos])
                         textsurface = self.font.render(f'{text}', True, self.colors['LINES'])
                         text_size = self.font.size(text)
                         self.screen.blit(textsurface, (center[0] - text_size[0] // 2,

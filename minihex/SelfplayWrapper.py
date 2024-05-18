@@ -164,9 +164,11 @@ def selfplay_wrapper(env):
                 if self.current_player_num == player["WHITE"]["id"]: # already added +1 to current_player_num in step
                     self.invert_board()
                 self.opponent_model.gui.update_board(self.simulator.board)
+                self.get_probs(self.opponent_model.model)
 
                 if self.current_player_num == player["WHITE"]["id"]:
                     self.invert_board()
+                
 
             if not done:
                 package = self.continue_game()
@@ -181,4 +183,15 @@ def selfplay_wrapper(env):
                 # self.render()
 
             return observation, agent_reward, done, False, {} 
+        
+        def get_probs(self, model):
+            board_tensor = model.policy.obs_to_tensor(self.simulator.board)
+            probs = model.policy.get_distribution(board_tensor[0]).distribution.probs
+            probs_np = probs.detach().numpy()[0]
+            scaled_probs = scale_value(probs_np, probs_np[self.simulator.board.flatten()==0].min(), probs_np[self.simulator.board.flatten()==0].max())
+            self.opponent_model.gui.update_field_text(np.round(scaled_probs, 1), self.simulator.board)
+
     return SelfPlayEnv
+
+def scale_value(value, min_val, max_val):
+    return 10 * (value - min_val) / (max_val - min_val)

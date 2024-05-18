@@ -76,7 +76,12 @@ class InteractiveGame:
     
     def choose_action(self, board, action_mask = None):
         self.board = board
+        
         action = self.play_move()
+        while isinstance(action, str):
+            self.gui.update_board(self.board)
+            action = self.play_move()
+
         action = self.coordinate_to_action(action)
 
         # self.winner = self.simulator.fast_move(action)
