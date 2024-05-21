@@ -20,7 +20,6 @@ class InteractiveGame:
         
         self.config = config
         self.switch_allowed = False # self.config.getboolean("INTERACTIVE", 'switch', fallback=True)
-
         self.board = board
         self.board_size = self.board.shape[0]
         self.gui = Gui(self.board, self.config.getint("INTERACTIVE", 'gui_radius', fallback=50),

@@ -36,11 +36,13 @@ class OpponentPolicy(object):
 
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20, sample_board=False):
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20, sample_board=False, prob_model=None):
             super(SelfPlayEnv, self).__init__(board_size=board_size, sample_board = sample_board)
 
             if play_gui:
+                self.prob_model = prob_model
                 self.opponent_models = [InteractiveGame(self.initial_board)]
+                self.opponent_model = InteractiveGame(self.initial_board)
                 self.opponent_scores = [1]
                 base_model = InteractiveGame(self.initial_board)
             else:
@@ -61,7 +63,7 @@ def selfplay_wrapper(env):
 
         def reset(self, seed=None, options=None):
             super(SelfPlayEnv, self).reset()
-            self.agent_player_num = random.randint(0,1)
+            self.agent_player_num = 1#random.randint(0,1)
             self.setup_opponents()
             if self.play_gui:
                 self.best_model.gui.update_board(self.simulator.board)
@@ -138,14 +140,18 @@ def selfplay_wrapper(env):
             reward = None
             done = None
 
-            if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
-                self.invert_board()
+            if self.play_gui:
+                if (self.current_player_num == player["WHITE"]["id"]): 
+                    self.invert_board()
+                
+                self.get_probs(self.prob_model)
+
 
             rv = random.uniform(0,1)
-            if rv > 0.05:
-                action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
-            else:
-                action = BaseRandomPolicy().choose_action(self.simulator.board)
+            # if rv > 0.05:
+            action = self.opponent_model.choose_action(self.simulator.board, self.legal_actions())
+            # else:
+            #     action = BaseRandomPolicy().choose_action(self.simulator.board)
 
             if self.play_gui & (self.current_player_num == player["WHITE"]["id"]): 
                 self.invert_board()
@@ -164,8 +170,7 @@ def selfplay_wrapper(env):
                 if self.current_player_num == player["WHITE"]["id"]: # already added +1 to current_player_num in step
                     self.invert_board()
                 self.opponent_model.gui.update_board(self.simulator.board)
-                self.get_probs(self.opponent_model.model)
-
+                
                 if self.current_player_num == player["WHITE"]["id"]:
                     self.invert_board()
                 

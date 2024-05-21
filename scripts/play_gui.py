@@ -8,13 +8,19 @@ from minihex.SelfplayWrapper import selfplay_wrapper
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
-env = selfplay_wrapper(HexEnv)(play_gui=True, board_size=5, scores=np.zeros(20))
+
+model = MaskablePPO.load("models/5x5_MLP-default_lr-0.0003_31")
+
+env = selfplay_wrapper(HexEnv)(play_gui=True, board_size=5, scores=np.zeros(20),prob_model=model)
 env = ActionMasker(env, mask_fn)
 
-model = MaskablePPO.load("hex_selfplay_new_10M_5x5")
 
+# env.unwrapped.opponent_models[0].model = model
+# env.unwrapped.opponent_models[0].model = model
+# env.unwrapped.prob_model = model
 state, info = env.reset()
 terminated = False
+
 
 while not terminated:
     board = state
@@ -22,5 +28,4 @@ while not terminated:
     action, _states = model.predict(state, deterministic=True, action_masks=env.legal_actions())
     print("agent played: ", action)
 
-    env.unwrapped.opponent_model.model = model
     state, reward, terminated, truncated, info = env.step(action)
