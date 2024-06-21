@@ -36,16 +36,21 @@ class OpponentPolicy(object):
 
 def selfplay_wrapper(env):
     class SelfPlayEnv(env):
-        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20, sample_board=False, prob_model=None):
+        def __init__(self, base_model=BaseRandomPolicy(), scores=np.zeros(20), play_gui=False,board_size=5,buffer_size=20, sample_board=False, prob_model=None,agent_player_num=None):
             super(SelfPlayEnv, self).__init__(board_size=board_size, sample_board = sample_board)
-
+            self.agent_player_num=agent_player_num
             if play_gui:
                 self.prob_model = prob_model
                 self.opponent_models = [InteractiveGame(self.initial_board)]
                 self.opponent_model = InteractiveGame(self.initial_board)
                 self.opponent_scores = [1]
                 base_model = InteractiveGame(self.initial_board)
+                self.calculate_probs = True
+                if prob_model==None:
+                    self.calculate_probs = False
             else:
+
+                self.calculate_probs = False
                 if type(base_model) != BaseRandomPolicy:
                     self.opponent_models = np.array([OpponentPolicy(base_model) for _ in range(buffer_size)])
                     self.opponent_scores = scores
@@ -63,7 +68,10 @@ def selfplay_wrapper(env):
 
         def reset(self, seed=None, options=None):
             super(SelfPlayEnv, self).reset()
-            self.agent_player_num = 1#random.randint(0,1)
+            
+            if self.agent_player_num == None:
+                self.agent_player_num = random.randint(0,1)
+
             self.setup_opponents()
             if self.play_gui:
                 self.best_model.gui.update_board(self.simulator.board)
@@ -82,7 +90,7 @@ def selfplay_wrapper(env):
     
         def setup_opponents(self):
             if self.eval_state:
-                if self.eval_episode <= 29:
+                if self.eval_episode <= len(self.opponent_models)-1:
                     self.opponent_model = self.opponent_models[self.eval_episode]
                     self.eval_episode += 1
                 return None
@@ -144,7 +152,8 @@ def selfplay_wrapper(env):
                 if (self.current_player_num == player["WHITE"]["id"]): 
                     self.invert_board()
                 
-                self.get_probs(self.prob_model)
+                if self.calculate_probs:
+                    self.get_probs(self.prob_model)
 
 
             rv = random.uniform(0,1)
