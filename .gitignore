@@ -5,5 +5,5 @@
 **/build
 .venv/*
 
-models/*
+models/experiments/*
 log/*
