@@ -51,7 +51,9 @@ class Gui:
         self.last_field_text = None
         self.winner_text = None
 
-        pygame.init()
+        # pygame.init()
+        
+        
 
         # Set the height and width of the screen
         self.screen = pygame.display.set_mode(self.size)
@@ -102,7 +104,18 @@ class Gui:
         
         print("update")
         # Clear the screen and set the screen background
-        self.screen.fill(self.colors['BACKGROUND'])
+        # self.screen.fill(self.colors['BACKGROUND'])
+        # Screen settings
+        SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+
+        background_image = pygame.image.load("assets/hex-background.png")#.convert_alpha()
+
+        # Get the original image size
+        bg_width, bg_height = background_image.get_size()
+
+        # Center the image if it's the same size as the screen or if no scaling is needed
+        x_offset = (SCREEN_WIDTH - bg_width) // 2
+        y_offset = (SCREEN_HEIGHT - bg_height) // 2
 
         text = f"""
 {'✓' if self.show_field_text else '   '} s: toggle ai ratings"""
@@ -122,6 +135,8 @@ class Gui:
                     pygame.draw.polygon(self.screen, self.colors['PLAYER_1'], points, 0)
                 elif board[x, y] == player.WHITE:
                     pygame.draw.polygon(self.screen, self.colors['PLAYER_2'], points, 0)
+                elif board[x, y] == player.EMPTY:
+                    pygame.draw.polygon(self.screen, WHITE, points, 0)
                 
                 pygame.draw.polygon(self.screen, self.colors['LINES'], points, 3)
                 
@@ -208,3 +223,4 @@ def blit_text(surface, text, pos, font, color=pygame.Color('black')):
             x += word_width + space
         x = pos[0]  # Reset the x.
         y += word_height  # Start on new row.
+
