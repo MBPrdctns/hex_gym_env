@@ -88,7 +88,7 @@ class Gui:
     def get_center(self, pos):
         x = pos[0]
         y = pos[1]
-        return [2*self.r + x * self.r / 2 + y * self.r, 2*self.r + math.sqrt(3) / 2 * x * self.r]
+        return [2*self.r + x * self.r / 2 + y * self.r + 100, 2*self.r + math.sqrt(3) / 2 * x * self.r + 100]
 
     def update_field_text(self, field_text, board):
         self.last_field_text = field_text
