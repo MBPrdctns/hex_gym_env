@@ -29,7 +29,7 @@ env = ActionMasker(env, mask_fn)
 pygame.init()
 
 # Screen settings
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 800
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Game with Levels")
 
@@ -60,11 +60,11 @@ def show_menu_screen():
     while running:
         screen.blit(background_image, (0, 0))
         title = font.render("Wähle eine Schwierigkeitsstufe", True, WHITE)
-        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 100))
+        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, SCREEN_HEIGHT/2 - 300))
 
-        easy_button = pygame.Rect(SCREEN_WIDTH//2 - 100, 200, 200, 50)
-        medium_button = pygame.Rect(SCREEN_WIDTH//2 - 100, 300, 200, 50)
-        hard_button = pygame.Rect(SCREEN_WIDTH//2 - 100, 400, 200, 50)
+        easy_button = pygame.Rect(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT/2 - 100, 200, 50)
+        medium_button = pygame.Rect(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT/2, 200, 50)
+        hard_button = pygame.Rect(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT/2 + 100, 200, 50)
         border_radius=15
 
         pygame.draw.rect(screen, GREEN, easy_button, border_radius=border_radius)
@@ -75,9 +75,9 @@ def show_menu_screen():
         medium_text = small_font.render("Mittel", True, BLACK)
         hard_text = small_font.render("Schwer", True, BLACK)
 
-        screen.blit(easy_text, (easy_button.x + 60, easy_button.y + 10))
-        screen.blit(medium_text, (medium_button.x + 40, medium_button.y + 10))
-        screen.blit(hard_text, (hard_button.x + 60, hard_button.y + 10))
+        screen.blit(easy_text, (easy_button.x + 50, easy_button.y + 10))
+        screen.blit(medium_text, (medium_button.x + 55, medium_button.y + 10))
+        screen.blit(hard_text, (hard_button.x + 50, hard_button.y + 10))
 
         pygame.display.flip()
 
@@ -101,7 +101,7 @@ def show_menu_screen():
     return level_selected
 
 def show_start_screen():
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Start New Game')
 
     font = pygame.font.Font(None, 80)
@@ -134,7 +134,7 @@ def show_start_screen():
 
 def show_animation(winner):
     # Pygame logic to show the cheering animation
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     background_image = pygame.image.load("assets/hex-background.png").convert_alpha()
 
     # Get the original image size
@@ -150,17 +150,23 @@ def show_animation(winner):
     grey = (180, 180, 180)
     black = (0, 0, 0)
     yellow = (255, 255, 0)
+    red = (251, 41, 67)
+    blue = (6, 154, 243)
 
     def render_text_with_animation(text, base_font_size, frame_count):
         font_size = base_font_size + int(10 * math.sin(frame_count / 7))
         font = pygame.font.Font(None, font_size)
-        text_surface = font.render(text, True, black)
+        if winner == "Blau":
+            color = blue
+        else:
+            color = red
+        text_surface = font.render(text, True, color)
         return text_surface
 
     clock = pygame.time.Clock()
     base_font_size = 80
     frame_count = 0
-    animation_duration = 300  # Duration in frames
+    animation_duration = 200  # Duration in frames
 
     running = True
     while running and frame_count < animation_duration:
@@ -170,8 +176,8 @@ def show_animation(winner):
         screen.blit(background_image, (0,0))
         #screen.fill(white)
 
-        text_surface = render_text_with_animation(f"Player {winner} Won!", base_font_size, frame_count)
-        text_rect = text_surface.get_rect(center=(400, 300))
+        text_surface = render_text_with_animation(f"Spieler {winner} hat gewonnen!", base_font_size, frame_count)
+        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
         screen.blit(text_surface, text_rect)
 
         pygame.display.flip()
@@ -210,4 +216,4 @@ while True:
         print("agent played: ", action)
 
         state, reward, terminated, truncated, info = env.step(action)
-    show_animation(1)
+    show_animation(info["winner"])

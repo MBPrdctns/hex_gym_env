@@ -147,6 +147,7 @@ def selfplay_wrapper(env):
             observation = None 
             reward = None
             done = None
+            winner = None
 
             if self.play_gui:
                 if (self.current_player_num == player["WHITE"]["id"]): 
@@ -168,12 +169,19 @@ def selfplay_wrapper(env):
                 action = self.simulator.coordinate_to_action((y,x))
 
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
+            
+            if done:
+                if self.current_player_num == player["WHITE"]["id"]:
+                    winner = "Rot"
+                else:
+                    winner = "Blau"
 
-            return observation, reward, done, None
+            return observation, reward, done, winner
 
         def step(self, action):
             # self.render()
             observation, reward, done, _ = super(SelfPlayEnv, self).step(action)
+            info = {}
 
             if self.play_gui:
                 if self.current_player_num == player["WHITE"]["id"]: # already added +1 to current_player_num in step
@@ -187,7 +195,13 @@ def selfplay_wrapper(env):
             if not done:
                 package = self.continue_game()
                 if package[0] is not None:
-                    observation, reward, done, _ = package
+                    observation, reward, done, winner = package
+                    info = {"winner": winner}
+            else:
+                if self.current_player_num == player["WHITE"]["id"]:
+                    info = {"winner": "Rot"}
+                else:
+                    info = {"winner": "Blau"}
 
             agent_reward = reward[self.agent_player_num]
             # print("agent_reward: ", agent_reward)
@@ -196,7 +210,7 @@ def selfplay_wrapper(env):
             # if done:
                 # self.render()
 
-            return observation, agent_reward, done, False, {} 
+            return observation, agent_reward, done, False, info
         
         def get_probs(self, model):
             board_tensor = model.policy.obs_to_tensor(self.simulator.board)

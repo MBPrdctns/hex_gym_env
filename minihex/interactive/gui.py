@@ -5,6 +5,8 @@ import pygame
 import numpy as np
 from enum import IntEnum
 
+SCREEN_WIDTH, SCREEN_HEIGHT  = 1000, 800
+
 
 # Define the colors we will use in RGB format
 WHITE = (255, 255, 255)
@@ -88,7 +90,7 @@ class Gui:
     def get_center(self, pos):
         x = pos[0]
         y = pos[1]
-        return [2*self.r + x * self.r / 2 + y * self.r + 100, 2*self.r + math.sqrt(3) / 2 * x * self.r + 100]
+        return [2*self.r + x * self.r / 2 + y * self.r + SCREEN_WIDTH / 5, 2*self.r + math.sqrt(3) / 2 * x * self.r + SCREEN_HEIGHT/6]
 
     def update_field_text(self, field_text, board):
         self.last_field_text = field_text
