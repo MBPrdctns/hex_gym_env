@@ -29,7 +29,7 @@ env = ActionMasker(env, mask_fn)
 pygame.init()
 
 # Screen settings
-SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 800
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Game with Levels")
 
@@ -75,9 +75,12 @@ def show_menu_screen():
         medium_text = small_font.render("Mittel", True, BLACK)
         hard_text = small_font.render("Schwer", True, BLACK)
 
-        screen.blit(easy_text, (easy_button.x + 50, easy_button.y + 10))
-        screen.blit(medium_text, (medium_button.x + 55, medium_button.y + 10))
-        screen.blit(hard_text, (hard_button.x + 50, hard_button.y + 10))
+        screen.blit(easy_text, (easy_button.x + (easy_button.width - easy_text.get_width()) // 2,
+                                easy_button.y + (easy_button.height - easy_text.get_height()) // 2))
+        screen.blit(medium_text, (medium_button.x + (medium_button.width - medium_text.get_width()) // 2,
+                                medium_button.y + (medium_button.height - medium_text.get_height()) // 2))
+        screen.blit(hard_text, (hard_button.x + (hard_button.width - hard_text.get_width()) // 2,
+                                hard_button.y + (hard_button.height - hard_text.get_height()) // 2))
 
         pygame.display.flip()
 
