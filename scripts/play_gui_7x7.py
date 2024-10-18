@@ -65,7 +65,7 @@ def show_menu_screen():
         # screen.blit(background_image, (0, 0))
         scale_background()
 
-        title = font.render("Wähle eine Schwierigkeitsstufe", True, WHITE)
+        title = font.render("Wähle eine Schwierigkeitsstufe", True, BLACK)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, SCREEN_HEIGHT/2 - 300))
 
         easy_button = pygame.Rect(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT/2 - 100, 200, 50)
