@@ -5,8 +5,6 @@ import pygame
 import numpy as np
 from enum import IntEnum
 
-
-
 # Define the colors we will use in RGB format
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -52,12 +50,19 @@ class Gui:
         self.last_field_text = None
         self.winner_text = None
 
-        # pygame.init()
+        # Calculate the size of the screen/window
+        self.board_size = board.shape[0]
+
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.window_width, self.window_height = self.screen.get_size() 
         
-        
+        # Initialize offsets for centering
+        self.x_offset = 0
+        self.y_offset = 0
+        self.update_offsets()
 
         # Set the height and width of the screen
-        self.screen = pygame.display.set_mode(self.size)
+        # self.screen = pygame.display.set_mode(self.size)
         pygame.display.set_caption("HexHex")
 
         self.clock = pygame.time.Clock()
@@ -69,6 +74,15 @@ class Gui:
         self.font = pygame.font.Font(font_path, int(radius / 3))
         self.font_large = pygame.font.Font(font_path, int(radius / 2.5))
         self.update_board(board)
+
+    def update_offsets(self):
+        """ Update offsets to center the board in the window """
+        board_pixel_width = (self.board_size - 1) * self.r * 3 / 2 + self.r
+        board_pixel_height = (self.board_size - 1) * math.sqrt(3) / 2 * self.r + self.r
+        
+        # Calculate the offsets needed to center the board
+        self.x_offset = (self.window_width - board_pixel_width) // 2
+        self.y_offset = (self.window_height - board_pixel_height) // 2
 
     def toggle_colors(self):
         self.colors = _get_colors(not self.colors['DARK_MODE'])
@@ -89,8 +103,9 @@ class Gui:
     def get_center(self, pos):
         x = pos[0]
         y = pos[1]
-        return [2*self.r + x * self.r / 2 + y * self.r + 100, 2*self.r + math.sqrt(3) / 2 * x * self.r + 100]
-
+        return [self.x_offset + x * self.r / 2 + y * self.r, 
+                self.y_offset + math.sqrt(3) / 2 * x * self.r]
+    
     def update_field_text(self, field_text, board):
         self.last_field_text = field_text
         self.update_board(board)
@@ -104,10 +119,6 @@ class Gui:
         board[-1, :] = player.BLACK
         
         print("update")
-        # Clear the screen and set the screen background
-        # self.screen.fill(self.colors['BACKGROUND'])
-        # Screen settings
-        SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 
         background_image = pygame.image.load("assets/hex-background.png")#.convert_alpha()
 
@@ -115,8 +126,8 @@ class Gui:
         bg_width, bg_height = background_image.get_size()
 
         # Center the image if it's the same size as the screen or if no scaling is needed
-        x_offset = (SCREEN_WIDTH - bg_width) // 2
-        y_offset = (SCREEN_HEIGHT - bg_height) // 2
+        x_offset = (self.window_width - bg_width) // 2
+        y_offset = (self.window_height - bg_height) // 2
 
         text = f"""
 {'✓' if self.show_field_text else '   '} s: toggle ai ratings"""

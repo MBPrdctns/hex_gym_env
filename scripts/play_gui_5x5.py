@@ -13,7 +13,6 @@ from minihex.SelfplayWrapper import selfplay_wrapper, BaseRandomPolicy
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.get_action_mask()
 
-
 model = MaskablePPO.load("models/5x5_MLP-default_lr-0.0003_67")
 
 env = selfplay_wrapper(HexEnv)(play_gui=True, 
@@ -29,8 +28,11 @@ env = ActionMasker(env, mask_fn)
 pygame.init()
 
 # Screen settings
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+# SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size() 
+
+# screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Game with Levels")
 
 # Fonts and colors
@@ -58,7 +60,10 @@ def show_menu_screen():
     level_selected = None
     
     while running:
-        screen.blit(background_image, (0, 0))
+        # background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # screen.blit(background_image, (0, 0))
+        scale_background()
+
         title = font.render("Wähle eine Schwierigkeitsstufe", True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, SCREEN_HEIGHT/2 - 300))
 
@@ -137,8 +142,8 @@ def show_start_screen():
 
 def show_animation(winner):
     # Pygame logic to show the cheering animation
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    background_image = pygame.image.load("assets/hex-background.png").convert_alpha()
+    # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    # background_image = pygame.image.load("assets/hex-background.png").convert_alpha()
 
     # Get the original image size
     bg_width, bg_height = background_image.get_size()
@@ -176,7 +181,8 @@ def show_animation(winner):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        screen.blit(background_image, (0,0))
+        # screen.blit(background_image, (0,0))
+        scale_background()
         #screen.fill(white)
 
         text_surface = render_text_with_animation(f"Spieler {winner} hat gewonnen!", base_font_size, frame_count)
@@ -189,9 +195,38 @@ def show_animation(winner):
 
     #pygame.quit()
 
+def scale_background():
 
+    # Get the original size of the background image
+    bg_width, bg_height = background_image.get_size()
+
+    # Calculate aspect ratios
+    window_aspect_ratio = SCREEN_WIDTH / SCREEN_HEIGHT
+    image_aspect_ratio = bg_width / bg_height
+
+    # Determine the new size while maintaining aspect ratio
+    if window_aspect_ratio > image_aspect_ratio:
+        # Window is wider than the image's aspect ratio
+        new_height = SCREEN_HEIGHT
+        new_width = int(new_height * image_aspect_ratio)
+    else:
+        # Window is taller than the image's aspect ratio
+        new_width = SCREEN_WIDTH
+        new_height = int(new_width / image_aspect_ratio)
+
+    # Scale the image to the new dimensions
+    scaled_image = pygame.transform.scale(background_image, (new_width, new_height))
+
+    # Calculate the position to center the image on the screen
+    x_offset = (SCREEN_WIDTH - new_width) // 2
+    y_offset = (SCREEN_HEIGHT - new_height) // 2
+
+    # Blit the scaled image, cropping the edges as necessary
+    screen.blit(scaled_image, (x_offset, y_offset))
 
 while True:
+    # background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    scale_background()
     selected_level = show_menu_screen()
     n = 0
     if selected_level == 'easy':
@@ -205,7 +240,8 @@ while True:
     while not terminated:
         i += 1
         #time.sleep(1)
-        screen.blit(background_image, (0, 0))
+        scale_background()
+        # screen.blit(background_image, (0, 0))
         board = state
         if i == 1:
             time.sleep(0.5)

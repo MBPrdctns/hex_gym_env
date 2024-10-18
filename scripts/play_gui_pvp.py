@@ -22,7 +22,10 @@ def show_menu_screen():
     number = 7
 
     while running:
-        screen.blit(background_image, (0, 0))
+        # background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # screen.blit(background_image, (0, 0))
+        scale_background()
+
         title = font.render("Wähle eine Spielfeldgröße", True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 100))
 
@@ -114,8 +117,8 @@ def show_start_screen():
 
 def show_animation(winner):
     # Pygame logic to show the cheering animation
-    screen = pygame.display.set_mode((800, 600))
-    background_image = pygame.image.load("assets/hex-background.png").convert_alpha()
+    # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    # background_image = pygame.image.load("assets/hex-background.png").convert_alpha()
 
     # Get the original image size
     bg_width, bg_height = background_image.get_size()
@@ -130,28 +133,35 @@ def show_animation(winner):
     grey = (180, 180, 180)
     black = (0, 0, 0)
     yellow = (255, 255, 0)
+    red = (251, 41, 67)
+    blue = (6, 154, 243)
 
     def render_text_with_animation(text, base_font_size, frame_count):
         font_size = base_font_size + int(10 * math.sin(frame_count / 7))
         font = pygame.font.Font(None, font_size)
-        text_surface = font.render(text, True, black)
+        if winner == "Blau":
+            color = blue
+        else:
+            color = red
+        text_surface = font.render(text, True, color)
         return text_surface
 
     clock = pygame.time.Clock()
     base_font_size = 80
     frame_count = 0
-    animation_duration = 300  # Duration in frames
+    animation_duration = 200  # Duration in frames
 
     running = True
     while running and frame_count < animation_duration:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        screen.blit(background_image, (0,0))
+        # screen.blit(background_image, (0,0))
+        scale_background()
         #screen.fill(white)
 
-        text_surface = render_text_with_animation(f"Player {winner} Won!", base_font_size, frame_count)
-        text_rect = text_surface.get_rect(center=(400, 300))
+        text_surface = render_text_with_animation(f"Spieler {winner} hat gewonnen!", base_font_size, frame_count)
+        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
         screen.blit(text_surface, text_rect)
 
         pygame.display.flip()
@@ -160,6 +170,34 @@ def show_animation(winner):
 
     #pygame.quit()
 
+def scale_background():
+
+    # Get the original size of the background image
+    bg_width, bg_height = background_image.get_size()
+
+    # Calculate aspect ratios
+    window_aspect_ratio = SCREEN_WIDTH / SCREEN_HEIGHT
+    image_aspect_ratio = bg_width / bg_height
+
+    # Determine the new size while maintaining aspect ratio
+    if window_aspect_ratio > image_aspect_ratio:
+        # Window is wider than the image's aspect ratio
+        new_height = SCREEN_HEIGHT
+        new_width = int(new_height * image_aspect_ratio)
+    else:
+        # Window is taller than the image's aspect ratio
+        new_width = SCREEN_WIDTH
+        new_height = int(new_width / image_aspect_ratio)
+
+    # Scale the image to the new dimensions
+    scaled_image = pygame.transform.scale(background_image, (new_width, new_height))
+
+    # Calculate the position to center the image on the screen
+    x_offset = (SCREEN_WIDTH - new_width) // 2
+    y_offset = (SCREEN_HEIGHT - new_height) // 2
+
+    # Blit the scaled image, cropping the edges as necessary
+    screen.blit(scaled_image, (x_offset, y_offset))
 ##########################################################################################
 ##########################################################################################
 
@@ -167,8 +205,9 @@ def show_animation(winner):
 pygame.init()
 
 # Screen settings
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size() 
+
 pygame.display.set_caption("Game with Levels")
 
 # Fonts and colors
@@ -193,9 +232,11 @@ y_offset = (SCREEN_HEIGHT - bg_height) // 2
 
 
 while True:
+    # background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    scale_background()
     board_size = show_menu_screen()
-    
-    screen.blit(background_image, (0, 0))
+
+    # screen.blit(background_image, (0, 0))
     env = selfplay_wrapper(HexEnv)(play_gui=True, 
                                     board_size=board_size, 
                                     scores=np.zeros(20),
@@ -211,11 +252,11 @@ while True:
     player = InteractiveGame(state)
 
     while not terminated:
-        screen.blit(background_image, (0, 0))
+        scale_background()
         board = state
 
         env.opponent_model.gui.update_board(board)
         action = player.choose_action(board, env.legal_actions())
 
         state, reward, terminated, truncated, info = env.step(action)
-    show_animation(1)
+    show_animation(info["winner"])
